@@ -10,6 +10,11 @@
     "prettier",
   ],
   "languages": {
+    "JavaScript": {
+      "prettier": {
+        "allowed": true,
+      },
+    },
     "JSON": {
       "prettier": {
         "allowed": true,

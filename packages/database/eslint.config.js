@@ -1,15 +1,15 @@
 // @ts-check
 
-import js from '@eslint/js';
-import { defineConfig } from 'eslint/config';
-import tseslint from 'typescript-eslint';
+import js from "@eslint/js"
+import { defineConfig } from "eslint/config"
+import tseslint from "typescript-eslint"
 
 export default defineConfig({
-  files: ['**/*.{ts,tsx}'],
+  files: ["**/*.{ts,tsx}"],
   extends: [js.configs.recommended, tseslint.configs.recommendedTypeChecked],
   languageOptions: {
     parserOptions: {
       projectService: true,
     },
   },
-});
+})
