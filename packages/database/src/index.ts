@@ -1,2 +1,2 @@
-export { db } from "./drizzle/db"
-export * from "./drizzle/schema"
+export { db } from "./drizzle/db.ts"
+export * from "./drizzle/schema.ts"

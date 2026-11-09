@@ -1,6 +1,5 @@
 import compression from "compression"
 import express, {
-  Router,
   type Express,
   type NextFunction,
   type Request,
@@ -8,13 +7,14 @@ import express, {
 } from "express"
 import helmet from "helmet"
 import createError from "http-errors"
+import { apiRouter } from "./routes/api.ts"
 
 const app: Express = express()
 
 app.use(helmet())
 app.use(compression())
 
-const apiRouter = Router()
+app.use(express.json())
 
 app.use("/api", apiRouter)
 

@@ -1,6 +1,6 @@
 import { app } from "./app.ts"
+import { env } from "./env.ts"
 
-const PORT = process.env.PORT || 3000
-app.listen(PORT, () => {
-  console.log("Listening on port", PORT)
+app.listen(env.PORT, () => {
+  console.log("Listening on port", env.PORT)
 })
