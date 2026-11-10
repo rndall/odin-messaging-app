@@ -1,5 +1,6 @@
 import { defineRelations } from "drizzle-orm"
 import {
+  index,
   integer,
   primaryKey,
   snakeCase,
@@ -15,50 +16,64 @@ export const users = snakeCase.table("users", {
   passwordHash: text().notNull(),
 })
 
-export const profileInfo = snakeCase.table("profile_info", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
-  displayName: varchar({ length: 128 }),
-  avatarUrl: text(),
-  bio: varchar({ length: 250 }),
-  userId: integer().references(() => users.id),
-})
+export const profileInfo = snakeCase.table(
+  "profile_info",
+  {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    displayName: varchar({ length: 128 }),
+    avatarUrl: text(),
+    bio: varchar({ length: 250 }),
+    userId: integer()
+      .unique()
+      .notNull()
+      .references(() => users.id),
+  },
+  (t) => [index("profile_info_user_id_idx").on(t.userId)]
+)
 
-export const messages = snakeCase.table("messages", {
-  id: uuid().primaryKey().defaultRandom(),
-  content: varchar({ length: 250 }).notNull(),
-  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-  editedAt: timestamp({ withTimezone: true }),
-})
+export const messages = snakeCase.table(
+  "messages",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    content: varchar({ length: 250 }).notNull(),
+    senderId: integer()
+      .notNull()
+      .references(() => users.id),
+    conversationId: uuid()
+      .notNull()
+      .references(() => conversations.id),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    editedAt: timestamp({ withTimezone: true }),
+  },
+  (t) => [
+    index("messages_conversation_id_idx").on(t.conversationId, t.createdAt),
+  ]
+)
 
 export const conversations = snakeCase.table("conversations", {
   id: uuid().primaryKey().defaultRandom(),
   name: varchar({ length: 128 }).notNull(),
 })
 
-export const usersToMessages = snakeCase.table(
-  "users_to_messages",
+export const usersToConversations = snakeCase.table(
+  "users_to_conversations",
   {
     userId: integer()
       .notNull()
       .references(() => users.id),
-    messageId: uuid()
-      .notNull()
-      .references(() => messages.id),
-  },
-  (t) => [primaryKey({ columns: [t.userId, t.messageId] })]
-)
-
-export const messagesToConversations = snakeCase.table(
-  "messages_to_conversations",
-  {
-    messageId: uuid()
-      .notNull()
-      .references(() => messages.id),
     conversationId: uuid()
       .notNull()
       .references(() => conversations.id),
   },
-  (t) => [primaryKey({ columns: [t.messageId, t.conversationId] })]
+  (t) => [
+    primaryKey({ columns: [t.userId, t.conversationId] }),
+    index("users_to_conversations_user_id_idx").on(t.userId),
+    index("users_to_conversations_conversation_id_idx").on(t.conversationId),
+    index("users_to_conversations_composite_idx").on(
+      t.userId,
+      t.conversationId
+    ),
+  ]
 )
 
 export const relations = defineRelations(
@@ -67,8 +82,7 @@ export const relations = defineRelations(
     profileInfo,
     messages,
     conversations,
-    usersToMessages,
-    messagesToConversations,
+    usersToConversations,
   },
   (r) => ({
     users: {
@@ -77,21 +91,26 @@ export const relations = defineRelations(
         to: r.profileInfo.userId,
         optional: false,
       }),
+      conversations: r.many.conversations({
+        from: r.users.id.through(r.usersToConversations.userId),
+        to: r.conversations.id.through(r.usersToConversations.conversationId),
+      }),
       messages: r.many.messages(),
     },
     messages: {
-      users: r.many.users({
-        from: r.messages.id.through(r.usersToMessages.messageId),
-        to: r.users.id.through(r.usersToMessages.userId),
+      sender: r.one.users({
+        from: r.messages.senderId,
+        to: r.users.id,
+        optional: false,
       }),
-      conversations: r.many.conversations({
-        from: r.messages.id.through(r.messagesToConversations.messageId),
-        to: r.conversations.id.through(
-          r.messagesToConversations.conversationId
-        ),
+      conversation: r.one.conversations({
+        from: r.messages.conversationId,
+        to: r.conversations.id,
+        optional: false,
       }),
     },
     conversations: {
+      users: r.many.users(),
       messages: r.many.messages(),
     },
   })
