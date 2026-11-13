@@ -1,6 +1,7 @@
-import type * as React from "react"
+import { Spinner } from "@workspace/ui/components/spinner"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
+import type * as React from "react"
 import {
   Button as ButtonPrimitive,
   Link as LinkPrimitive,
@@ -47,20 +48,51 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  loading,
+  loadingPosition = "end",
+  isDisabled,
+  isPending,
+  children,
   ...props
 }: Omit<ButtonPrimitiveProps, "className"> &
   React.RefAttributes<HTMLButtonElement> &
   VariantProps<typeof buttonVariants> & {
     className?: string
+    loading?: boolean
+    loadingPosition?: "start" | "end"
   }) {
+  const renderContent = (content: React.ReactNode) => (
+    <>
+      {loading && loadingPosition === "start" && (
+        <Spinner data-icon="inline-start" />
+      )}
+
+      {content}
+
+      {loading && loadingPosition === "end" && (
+        <Spinner data-icon="inline-end" />
+      )}
+    </>
+  )
+
+  // Preserve React Aria's render-prop children support.
+  const buttonChildren: ButtonPrimitiveProps["children"] =
+    typeof children === "function"
+      ? (values) => renderContent(children(values))
+      : renderContent(children)
+
   return (
     <ButtonPrimitive
       data-slot="button"
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
+      isDisabled={isDisabled || loading}
+      isPending={isPending || loading}
       {...props}
-    />
+    >
+      {buttonChildren}
+    </ButtonPrimitive>
   )
 }
 
@@ -84,4 +116,4 @@ function LinkButton({
   )
 }
 
-export { Button, LinkButton, buttonVariants }
+export { Button, buttonVariants, LinkButton }

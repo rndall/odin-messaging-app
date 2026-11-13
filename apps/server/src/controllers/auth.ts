@@ -1,4 +1,10 @@
-import { loginSchema, registerSchema } from "@workspace/shared"
+import {
+  loginSchema,
+  registerSchema,
+  type LoginReturn,
+  type RegisterReturn,
+} from "@workspace/shared"
+import type { Response } from "express"
 import createHttpError from "http-errors"
 
 import { createUser, generateToken, loginUser } from "../utils/auth.ts"
@@ -6,7 +12,7 @@ import { makeValidatedEndpoint } from "../utils/endpoint.ts"
 
 export const register = makeValidatedEndpoint(
   { body: registerSchema },
-  async (req, res) => {
+  async (req, res: Response<RegisterReturn>) => {
     const { username, password } = req.body
 
     const user = await createUser({ username, password })
@@ -21,7 +27,7 @@ export const register = makeValidatedEndpoint(
 
 export const login = makeValidatedEndpoint(
   { body: loginSchema },
-  async (req, res) => {
+  async (req, res: Response<LoginReturn>) => {
     const { username, password } = req.body
 
     const user = await loginUser({ username, password })
