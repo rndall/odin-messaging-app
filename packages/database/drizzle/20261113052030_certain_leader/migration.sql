@@ -1,0 +1,1 @@
+ALTER TABLE "profile_info" DROP CONSTRAINT "profile_info_user_id_users_id_fkey", ADD CONSTRAINT "profile_info_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;

@@ -1,0 +1,44 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "72ac9e0e-22a6-40d6-b6d6-295f4ac53c4d",
+  "prevIds": [
+    "7ccde098-ebb3-4acb-ad2f-d5faadda8aae"
+  ],
+  "footprints": [
+    {
+      "statementType": "recreate_fk",
+      "statementTarget": [
+        "table",
+        "public",
+        "profile_info"
+      ],
+      "writes": [
+        "s|fk|public.profile_info.profile_info_user_id_users_id_fkey",
+        "n|fk|public.profile_info.profile_info_user_id_users_id_fkey",
+        "e|fk|public.profile_info.profile_info_user_id_users_id_fkey",
+        "n|con|public.profile_info.profile_info_user_id_users_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|public.profile_info",
+        "n|sch|public",
+        "n|tbl|public.users",
+        "n|sch|public",
+        "n|col|public.profile_info.user_id",
+        "n|col|public.users.id",
+        "e|uniqueness|public.users.id"
+      ],
+      "sqlHash": "2ef15f62c2be037a"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "alter",
+      "key": "fks\u0000[\"public\",\"profile_info\",\"profile_info_user_id_users_id_fkey\"]",
+      "set": {
+        "onDelete": "CASCADE"
+      }
+    }
+  ]
+}

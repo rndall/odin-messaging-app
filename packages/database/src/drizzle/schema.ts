@@ -26,7 +26,7 @@ export const profileInfo = snakeCase.table(
     userId: integer()
       .unique()
       .notNull()
-      .references(() => users.id),
+      .references(() => users.id, { onDelete: "cascade" }),
   },
   (t) => [index("profile_info_user_id_idx").on(t.userId)]
 )
