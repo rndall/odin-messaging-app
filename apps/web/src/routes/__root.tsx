@@ -9,7 +9,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootComponent() {
   return (
-    <div className="container mx-auto min-h-svh px-4">
+    <div className="min-h-svh">
       <Outlet />
     </div>
   )
