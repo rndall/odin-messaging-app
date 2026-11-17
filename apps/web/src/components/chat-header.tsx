@@ -2,7 +2,7 @@ import { SquarePenIcon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { Link } from "@tanstack/react-router"
 
-import { Button } from "@workspace/ui/components/button"
+import { buttonVariants } from "@workspace/ui/components/button"
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -16,9 +16,9 @@ export default function ChatHeader() {
           Chats
         </Link>
         <div>
-          <Button size="icon">
+          <Link to="/new" className={buttonVariants({ size: "icon" })}>
             <HugeiconsIcon icon={SquarePenIcon} strokeWidth={2} />
-          </Button>
+          </Link>
         </div>
       </SidebarGroupLabel>
     </SidebarGroup>

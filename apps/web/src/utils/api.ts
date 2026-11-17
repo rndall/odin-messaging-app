@@ -13,7 +13,15 @@ export class ApiError extends Error {
   }
 }
 
-export const apiUrl = (path: string) => `${env.VITE_API_BASE_URL}${path}`
+export const apiUrl = (
+  path: string,
+  query?: ConstructorParameters<typeof URLSearchParams>[0]
+) => {
+  const url = new URL(`${env.VITE_API_BASE_URL}${path}`)
+  url.search = new URLSearchParams(query).toString()
+
+  return url
+}
 
 export const parseJson = async <T>(
   res: Response,

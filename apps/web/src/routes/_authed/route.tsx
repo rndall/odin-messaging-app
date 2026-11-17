@@ -22,7 +22,7 @@ function RouteComponent() {
   return (
     <SidebarProvider open={true}>
       <AppSidebar />
-      <main className="flex flex-1 flex-col p-4">
+      <main className="m-5 flex flex-1 flex-col bg-card shadow">
         <Outlet />
       </main>
     </SidebarProvider>

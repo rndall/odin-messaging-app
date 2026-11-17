@@ -33,6 +33,10 @@ async function main() {
       columns: {
         displayName: f.fullName(),
         bio: f.loremIpsum(),
+        avatarUrl: f.default({
+          defaultValue:
+            "https://i.pinimg.com/originals/a9/e1/a7/a9e1a7f7eb2a27071a68a706c11cd6a0.jpg",
+        }),
       },
     },
     conversations: {
