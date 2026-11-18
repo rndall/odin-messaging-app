@@ -13,12 +13,13 @@ export class ApiError extends Error {
   }
 }
 
-export const apiUrl = (
-  path: string,
-  query?: ConstructorParameters<typeof URLSearchParams>[0]
-) => {
+export const apiUrl = (path: string, query?: Record<string, unknown>) => {
   const url = new URL(`${env.VITE_API_BASE_URL}${path}`)
-  url.search = new URLSearchParams(query).toString()
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(query ?? {})) {
+    if (value) params.set(key, String(value))
+  }
+  url.search = params.toString()
 
   return url
 }

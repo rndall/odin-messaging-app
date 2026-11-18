@@ -40,14 +40,18 @@ describe("Users", () => {
     describe("query", () => {
       test.each([
         {
-          search: "test",
+          query: { search: "test" },
           response: [{ username: "testuser1" }, { username: "testuser2" }],
         },
         {
-          search: "james",
+          query: { search: "james" },
           response: [],
         },
-      ])("returns users matching search %s", async ({ search, response }) => {
+        {
+          query: { limit: 2 },
+          response: [{ username: "user1" }, { username: "user2" }],
+        },
+      ])("returns users matching search %s", async ({ query, response }) => {
         await db.insert(users).values([
           { username: "user1", passwordHash: "hashedpassword" },
           { username: "user2", passwordHash: "hashedpassword" },
@@ -55,7 +59,7 @@ describe("Users", () => {
           { username: "testuser2", passwordHash: "hashedpassword" },
         ])
 
-        const res = await request(app).get("/api/users").query({ search })
+        const res = await request(app).get("/api/users").query(query)
 
         expect(res.headers["content-type"]).toMatch(/json/)
         expect(res.status).toBe(200)
