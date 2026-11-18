@@ -1,0 +1,204 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "e23977dd-7671-40a7-b363-176211f89ebd",
+  "prevIds": [
+    "72ac9e0e-22a6-40d6-b6d6-295f4ac53c4d"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_enum",
+      "statementTarget": [
+        "enum",
+        "public",
+        "conversation_type"
+      ],
+      "writes": [
+        "s|enum|public.conversation_type",
+        "n|enum|public.conversation_type",
+        "e|enum|public.conversation_type",
+        "n|type|public.conversation_type"
+      ],
+      "reads": [
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "drop_unique",
+      "statementTarget": [
+        "table",
+        "public",
+        "profile_info"
+      ],
+      "writes": [
+        "s|uq|public.profile_info.profile_info_user_id_key",
+        "n|uq|public.profile_info.profile_info_user_id_key",
+        "e|uq|public.profile_info.profile_info_user_id_key",
+        "n|con|public.profile_info.profile_info_user_id_key",
+        "n|rel|public.profile_info_user_id_key"
+      ],
+      "reads": [
+        "n|tbl|public.profile_info",
+        "n|sch|public",
+        "e|col|public.profile_info.user_id"
+      ],
+      "sharedWrites": [
+        "e|uniqueness|public.profile_info.user_id"
+      ]
+    },
+    {
+      "statementType": "drop_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "profile_info",
+        "profile_info_user_id_idx"
+      ],
+      "writes": [
+        "s|idx|public.profile_info_user_id_idx",
+        "n|idx|public.profile_info_user_id_idx",
+        "e|idx|public.profile_info_user_id_idx",
+        "n|rel|public.profile_info_user_id_idx"
+      ],
+      "reads": [
+        "e|tbl|public.profile_info",
+        "n|sch|public",
+        "e|col|public.profile_info.user_id"
+      ],
+      "sharedWrites": []
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "conversations",
+        "type"
+      ],
+      "writes": [
+        "s|col|public.conversations.type",
+        "n|col|public.conversations.type",
+        "e|col|public.conversations.type"
+      ],
+      "reads": [
+        "n|tbl|public.conversations",
+        "n|sch|public",
+        "n|enum|public.conversation_type"
+      ]
+    },
+    {
+      "statementType": "drop_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "profile_info",
+        "id"
+      ],
+      "writes": [
+        "s|col|public.profile_info.id",
+        "n|col|public.profile_info.id",
+        "e|col|public.profile_info.id"
+      ],
+      "reads": [
+        "n|tbl|public.profile_info",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "alter_pk",
+      "statementTarget": [
+        "table",
+        "public",
+        "profile_info"
+      ],
+      "writes": [
+        "s|pk|public.profile_info"
+      ],
+      "reads": [
+        "n|tbl|public.profile_info",
+        "n|sch|public",
+        "n|col|public.profile_info.user_id"
+      ],
+      "sharedWrites": [
+        "e|uniqueness|public.profile_info.id"
+      ]
+    },
+    {
+      "statementType": "alter_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "conversations",
+        "name"
+      ],
+      "writes": [
+        "s|colprop|public.conversations.name.notNull"
+      ],
+      "reads": [
+        "n|tbl|public.conversations",
+        "n|sch|public",
+        "n|col|public.conversations.name"
+      ],
+      "sqlHash": "6bd6949e1f6fd0ea"
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "name": "conversation_type",
+        "values": [
+          "direct",
+          "group"
+        ],
+        "entityType": "enums"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "type",
+        "type": "conversation_type",
+        "typeSchema": "public",
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "drop",
+      "key": "columns\u0000[\"public\",\"profile_info\",\"id\"]"
+    },
+    {
+      "op": "drop",
+      "key": "indexes\u0000[\"public\",\"profile_info_user_id_idx\"]"
+    },
+    {
+      "op": "drop",
+      "key": "uniques\u0000[\"public\",\"profile_info\",\"profile_info_user_id_key\"]"
+    },
+    {
+      "op": "alter",
+      "key": "columns\u0000[\"public\",\"conversations\",\"name\"]",
+      "set": {
+        "notNull": false
+      }
+    },
+    {
+      "op": "alter",
+      "key": "pks\u0000[\"public\",\"profile_info\",\"profile_info_pkey\"]",
+      "set": {
+        "columns": [
+          "user_id"
+        ]
+      }
+    }
+  ]
+}

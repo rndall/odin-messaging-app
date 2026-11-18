@@ -2,6 +2,7 @@ import { defineRelations } from "drizzle-orm"
 import {
   index,
   integer,
+  pgEnum,
   primaryKey,
   snakeCase,
   text,
@@ -16,20 +17,14 @@ export const users = snakeCase.table("users", {
   passwordHash: text().notNull(),
 })
 
-export const profileInfo = snakeCase.table(
-  "profile_info",
-  {
-    id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    displayName: varchar({ length: 128 }),
-    avatarUrl: text(),
-    bio: varchar({ length: 250 }),
-    userId: integer()
-      .unique()
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-  },
-  (t) => [index("profile_info_user_id_idx").on(t.userId)]
-)
+export const profileInfo = snakeCase.table("profile_info", {
+  userId: integer()
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  displayName: varchar({ length: 128 }),
+  avatarUrl: text(),
+  bio: varchar({ length: 250 }),
+})
 
 export const messages = snakeCase.table(
   "messages",
@@ -50,9 +45,15 @@ export const messages = snakeCase.table(
   ]
 )
 
+export const conversationTypeEnum = pgEnum("conversation_type", [
+  "direct",
+  "group",
+])
+
 export const conversations = snakeCase.table("conversations", {
   id: uuid().primaryKey().defaultRandom(),
-  name: varchar({ length: 128 }).notNull(),
+  type: conversationTypeEnum().notNull(),
+  name: varchar({ length: 128 }),
 })
 
 export const usersToConversations = snakeCase.table(
@@ -89,7 +90,6 @@ export const relations = defineRelations(
       profileInfo: r.one.profileInfo({
         from: r.users.id,
         to: r.profileInfo.userId,
-        optional: false,
       }),
       conversations: r.many.conversations({
         from: r.users.id.through(r.usersToConversations.userId),
