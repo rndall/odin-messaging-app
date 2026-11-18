@@ -12,8 +12,8 @@ import { makeValidatedEndpoint } from "../utils/endpoint.ts"
 
 export const register = makeValidatedEndpoint(
   { body: registerSchema },
-  async (req, res: Response<RegisterReturn>) => {
-    const { username, password } = req.body
+  async (_req, res: Response<RegisterReturn>, { body }) => {
+    const { username, password } = body
 
     const user = await createUser({ username, password })
 
@@ -27,8 +27,8 @@ export const register = makeValidatedEndpoint(
 
 export const login = makeValidatedEndpoint(
   { body: loginSchema },
-  async (req, res: Response<LoginReturn>) => {
-    const { username, password } = req.body
+  async (_req, res: Response<LoginReturn>, { body }) => {
+    const { username, password } = body
 
     const user = await loginUser({ username, password })
 

@@ -6,8 +6,8 @@ import { findUsers } from "../utils/users.ts"
 
 export const getUsers = makeValidatedEndpoint(
   { query: usersQuerySchema },
-  async (req, res: Response<UsersReturn[]>) => {
-    const users = await findUsers(req.query)
+  async (_req, res: Response<UsersReturn[]>, { query }) => {
+    const users = await findUsers(query)
 
     res.json(users)
   }

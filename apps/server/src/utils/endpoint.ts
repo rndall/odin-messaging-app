@@ -1,22 +1,27 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import type { Request, Response } from "express"
 import { z, type ZodType } from "zod"
 
+type EndpointSchemas = {
+  params?: ZodType
+  query?: ZodType
+  body?: ZodType
+}
+
+type InferOutput<T> = T extends ZodType ? z.output<T> : never
+
+type EndpointData<S extends EndpointSchemas> = {
+  [
+    K in keyof S as [Extract<S[K], ZodType>] extends [never] ? never : K
+  ]: InferOutput<Extract<S[K], ZodType>>
+}
+
 export const makeValidatedEndpoint =
-  <TParams, TBody, TQuery>(
-    {
-      params,
-      query,
-      body,
-    }: {
-      params?: ZodType<TParams>
-      query?: ZodType<TQuery>
-      body?: ZodType<TBody>
-    },
+  <S extends EndpointSchemas>(
+    { params, query, body }: S,
     cb: (
-      req: Request<TParams, any, TBody, TQuery>,
-      res: Response
+      req: Request,
+      res: Response,
+      data: EndpointData<S>
     ) => Promise<void> | void
   ) =>
   (req: Request, res: Response) => {
@@ -24,10 +29,7 @@ export const makeValidatedEndpoint =
     const queryResult = query?.safeParse(req.query)
     const bodyResult = body?.safeParse(req.body)
 
-    const errors: Record<
-      string,
-      z.core.$ZodFlattenedError<TParams | TBody | TQuery>
-    > = {}
+    const errors: Record<string, unknown> = {}
 
     if (paramsResult && !paramsResult.success) {
       errors.params = z.flattenError(paramsResult.error)
@@ -48,6 +50,11 @@ export const makeValidatedEndpoint =
       })
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    return cb(req as any, res)
+    const data = {
+      ...(paramsResult?.success && { params: paramsResult.data }),
+      ...(queryResult?.success && { query: queryResult.data }),
+      ...(bodyResult?.success && { body: bodyResult.data }),
+    } as EndpointData<S>
+
+    return cb(req, res, data)
   }
