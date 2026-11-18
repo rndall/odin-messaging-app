@@ -2,9 +2,9 @@ import { db, users } from "@workspace/db"
 import type { Login, Register } from "@workspace/shared"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { env } from "../env.ts"
 
-type User = Pick<typeof users.$inferSelect, "id" | "username">
+import { env } from "../env.ts"
+import type { User } from "../types/users.ts"
 
 export const generateToken = (user: User) => jwt.sign(user, env.JWT_SECRET)
 

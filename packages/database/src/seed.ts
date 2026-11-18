@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm"
 import { reset, seed } from "drizzle-seed"
 
+import { getDirectKey } from "@workspace/shared/utils"
 import * as schema from "./drizzle/schema.ts"
 import { db } from "./index.ts"
 
@@ -8,28 +9,31 @@ import { db } from "./index.ts"
 const PASSWORD_HASH =
   "$2a$12$BDBCQVuGmdqt5xcEv0YffOtMCPsBiNCd6LpYBYcq5CIGYwiy65eRa"
 
+const USER_COUNT = 10
+
+const messageContents = [
+  "Hey! How are you?",
+  "I'm doing great, thanks for asking!",
+  "That's good to hear. What's been going on?",
+  "Not much, just wanted to catch up!",
+]
+
 async function main() {
   await reset(db, schema)
-
-  const messageContents = [
-    "Hey! How are you?",
-    "I'm doing great, thanks for asking!",
-    "That's good to hear. What's been going on?",
-    "Not much, just wanted to catch up!",
-  ]
 
   await seed(db, {
     users: schema.users,
     profileInfo: schema.profileInfo,
-    conversations: schema.conversations,
   }).refine((f) => ({
     users: {
+      count: USER_COUNT,
       columns: {
         username: f.firstName({ isUnique: true }),
         passwordHash: f.default({ defaultValue: PASSWORD_HASH }),
       },
     },
     profileInfo: {
+      count: USER_COUNT,
       columns: {
         displayName: f.weightedRandom([
           { weight: 0.7, value: f.fullName() },
@@ -47,18 +51,8 @@ async function main() {
                 "https://i.pinimg.com/originals/a9/e1/a7/a9e1a7f7eb2a27071a68a706c11cd6a0.jpg",
             }),
           },
-          {
-            weight: 0.5,
-            value: f.default({ defaultValue: null }),
-          },
+          { weight: 0.5, value: f.default({ defaultValue: null }) },
         ]),
-      },
-    },
-    conversations: {
-      count: 9,
-      columns: {
-        type: f.default({ defaultValue: "direct" }),
-        name: f.default({ defaultValue: null }),
       },
     },
   }))
@@ -68,52 +62,52 @@ async function main() {
   })
 
   const users = await db.query.users.findMany({ orderBy: { id: "asc" } })
-  const conversations = await db.query.conversations.findMany({
-    orderBy: { id: "asc" },
+
+  // Chain of adjacent pairs: (1,2), (2,3), ...
+  const userPairs = users.flatMap((user, i) => {
+    const next = users[i + 1]
+    return next ? [[user.id, next.id] as const] : []
   })
 
-  // Create pairs of users for direct conversations
-  const userPairs = users
-    .slice(0, -1)
-    .map((user, index) => [user.id, users[index + 1].id] as const)
+  await db.transaction(async (tx) => {
+    for (const [firstUserId, secondUserId] of userPairs) {
+      const [conversation] = await tx
+        .insert(schema.conversations)
+        .values({
+          type: "direct",
+          directKey: getDirectKey(firstUserId, secondUserId),
+        })
+        .returning()
 
-  // Add participants to each conversation
-  const participants = conversations.flatMap((conversation, index) => [
-    {
-      userId: userPairs[index][0],
-      conversationId: conversation.id,
-    },
-    {
-      userId: userPairs[index][1],
-      conversationId: conversation.id,
-    },
-  ])
+      if (!conversation) throw new Error("Failed to insert conversation")
 
-  await db.insert(schema.usersToConversations).values(participants)
+      await tx.insert(schema.usersToConversations).values([
+        { conversationId: conversation.id, userId: firstUserId },
+        { conversationId: conversation.id, userId: secondUserId },
+      ])
 
-  // Seed messages
-  const messages = conversations.flatMap((conversation, index) => {
-    const [firstUserId, secondUserId] = userPairs[index]
+      const senders = [firstUserId, secondUserId, firstUserId, secondUserId]
 
-    const senders = [firstUserId, secondUserId, firstUserId, secondUserId]
+      await tx.insert(schema.messages).values(
+        messageContents.map((content, messageIndex) => {
+          const createdAt = new Date(
+            Date.now() - (messageContents.length - messageIndex) * 60_000
+          )
 
-    return messageContents.map((content, messageIndex) => {
-      const createdAt = new Date(
-        Date.now() - (messageContents.length - messageIndex) * 60_000
+          return {
+            content,
+            senderId: senders[messageIndex],
+            conversationId: conversation.id,
+            createdAt,
+            editedAt:
+              messageIndex === 2
+                ? new Date(createdAt.getTime() + 15_000)
+                : null,
+          }
+        })
       )
-
-      return {
-        content,
-        senderId: senders[messageIndex],
-        conversationId: conversation.id,
-        createdAt,
-        editedAt:
-          messageIndex === 2 ? new Date(createdAt.getTime() + 15_000) : null,
-      }
-    })
+    }
   })
-
-  await db.insert(schema.messages).values(messages)
 }
 
 await main()

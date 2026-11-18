@@ -1,0 +1,161 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "a1a551b1-cf0d-4a12-81d6-d29ed5e37ac0",
+  "prevIds": [
+    "e23977dd-7671-40a7-b363-176211f89ebd"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "users_to_conversations",
+        "users_to_conversations_user_id_idx"
+      ],
+      "writes": [
+        "s|idx|public.users_to_conversations_user_id_idx",
+        "n|idx|public.users_to_conversations_user_id_idx",
+        "e|idx|public.users_to_conversations_user_id_idx",
+        "n|rel|public.users_to_conversations_user_id_idx"
+      ],
+      "reads": [
+        "e|tbl|public.users_to_conversations",
+        "n|sch|public",
+        "e|col|public.users_to_conversations.user_id"
+      ],
+      "sharedWrites": []
+    },
+    {
+      "statementType": "drop_index",
+      "statementTarget": [
+        "index",
+        "public",
+        "users_to_conversations",
+        "users_to_conversations_conversation_id_idx"
+      ],
+      "writes": [
+        "s|idx|public.users_to_conversations_conversation_id_idx",
+        "n|idx|public.users_to_conversations_conversation_id_idx",
+        "e|idx|public.users_to_conversations_conversation_id_idx",
+        "n|rel|public.users_to_conversations_conversation_id_idx"
+      ],
+      "reads": [
+        "e|tbl|public.users_to_conversations",
+        "n|sch|public",
+        "e|col|public.users_to_conversations.conversation_id"
+      ],
+      "sharedWrites": []
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "public",
+        "conversations",
+        "direct_key"
+      ],
+      "writes": [
+        "s|col|public.conversations.direct_key",
+        "n|col|public.conversations.direct_key",
+        "e|col|public.conversations.direct_key"
+      ],
+      "reads": [
+        "n|tbl|public.conversations",
+        "n|sch|public"
+      ]
+    },
+    {
+      "statementType": "add_unique",
+      "statementTarget": [
+        "table",
+        "public",
+        "conversations"
+      ],
+      "writes": [
+        "s|uq|public.conversations.conversations_direct_key_key",
+        "n|uq|public.conversations.conversations_direct_key_key",
+        "e|uq|public.conversations.conversations_direct_key_key",
+        "n|con|public.conversations.conversations_direct_key_key",
+        "n|rel|public.conversations_direct_key_key"
+      ],
+      "reads": [
+        "n|tbl|public.conversations",
+        "n|sch|public",
+        "n|col|public.conversations.direct_key"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "public",
+        "conversations"
+      ],
+      "writes": [
+        "s|ck|public.conversations.direct_key_matches_type",
+        "n|ck|public.conversations.direct_key_matches_type",
+        "e|ck|public.conversations.direct_key_matches_type",
+        "n|con|public.conversations.direct_key_matches_type"
+      ],
+      "reads": [
+        "n|tbl|public.conversations",
+        "n|sch|public",
+        "n|col|public.conversations.type",
+        "n|col|public.conversations.direct_key"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "direct_key",
+        "type": "varchar(32)",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "conversations_direct_key_key",
+        "nameExplicit": false,
+        "columns": [
+          "direct_key"
+        ],
+        "nullsNotDistinct": false,
+        "entityType": "uniques"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "public",
+        "table": "conversations",
+        "name": "direct_key_matches_type",
+        "value": "(\"type\" = 'direct') = (\"direct_key\" IS NOT NULL)",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "drop",
+      "key": "indexes\u0000[\"public\",\"users_to_conversations_user_id_idx\"]"
+    },
+    {
+      "op": "drop",
+      "key": "indexes\u0000[\"public\",\"users_to_conversations_conversation_id_idx\"]"
+    }
+  ]
+}

@@ -87,7 +87,7 @@ export default function UserSearch() {
                         <AvatarFallback>
                           {user.profileInfo.displayName
                             ? user.profileInfo.displayName[0].toUpperCase()
-                            : user.username}
+                            : user.username[0].toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                     </ItemMedia>

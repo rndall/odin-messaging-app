@@ -1,9 +1,10 @@
 import z from "zod"
 
-const userReturnSchema = z.object({
+export const authUserReturnSchema = z.object({
   id: z.number(),
   username: z.string(),
 })
+export type AuthUserReturn = z.infer<typeof authUserReturnSchema>
 
 // POST /register
 export const registerSchema = z
@@ -24,7 +25,7 @@ export type Register = z.infer<typeof registerSchema>
 
 export const registerReturnSchema = z.object({
   message: z.string(),
-  user: userReturnSchema,
+  user: authUserReturnSchema,
 })
 export type RegisterReturn = z.infer<typeof registerReturnSchema>
 
@@ -37,7 +38,7 @@ export type Login = z.infer<typeof loginSchema>
 
 export const loginReturnSchema = z.object({
   message: z.string(),
-  user: userReturnSchema,
+  user: authUserReturnSchema,
   token: z.string(),
 })
 export type LoginReturn = z.infer<typeof loginReturnSchema>

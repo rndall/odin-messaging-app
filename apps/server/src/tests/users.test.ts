@@ -1,7 +1,8 @@
-import { db, users } from "@workspace/db"
 import request from "supertest"
 
+import { db, users } from "@workspace/db"
 import { app } from "../app.ts"
+import { generateToken } from "../utils/auth.ts"
 
 describe("Users", () => {
   beforeEach(async () => {
@@ -12,6 +13,11 @@ describe("Users", () => {
     await db.$client.end()
   })
 
+  const token = generateToken({ id: 1, username: "testuser" })
+
+  const getUsers = () =>
+    request(app).get("/api/users").set("Authorization", `Bearer ${token}`)
+
   describe("list route", () => {
     test("returns all users", async () => {
       await db.insert(users).values([
@@ -19,7 +25,7 @@ describe("Users", () => {
         { username: "user2", passwordHash: "hashedpassword" },
       ])
 
-      const res = await request(app).get("/api/users")
+      const res = await getUsers()
 
       expect(res.headers["content-type"]).toMatch(/json/)
       expect(res.status).toBe(200)
@@ -30,7 +36,7 @@ describe("Users", () => {
     })
 
     test("returns empty array on no users", async () => {
-      const res = await request(app).get("/api/users")
+      const res = await getUsers()
 
       expect(res.headers["content-type"]).toMatch(/json/)
       expect(res.status).toBe(200)
@@ -59,7 +65,7 @@ describe("Users", () => {
           { username: "testuser2", passwordHash: "hashedpassword" },
         ])
 
-        const res = await request(app).get("/api/users").query(query)
+        const res = await getUsers().query(query)
 
         expect(res.headers["content-type"]).toMatch(/json/)
         expect(res.status).toBe(200)

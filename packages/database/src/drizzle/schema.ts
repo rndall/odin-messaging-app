@@ -1,5 +1,6 @@
-import { defineRelations } from "drizzle-orm"
+import { defineRelations, sql } from "drizzle-orm"
 import {
+  check,
   index,
   integer,
   pgEnum,
@@ -50,11 +51,21 @@ export const conversationTypeEnum = pgEnum("conversation_type", [
   "group",
 ])
 
-export const conversations = snakeCase.table("conversations", {
-  id: uuid().primaryKey().defaultRandom(),
-  type: conversationTypeEnum().notNull(),
-  name: varchar({ length: 128 }),
-})
+export const conversations = snakeCase.table(
+  "conversations",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    type: conversationTypeEnum().notNull(),
+    name: varchar({ length: 128 }),
+    directKey: varchar({ length: 32 }).unique(),
+  },
+  (t) => [
+    check(
+      "direct_key_matches_type",
+      sql`(${t.type} = 'direct') = (${t.directKey} IS NOT NULL)`
+    ),
+  ]
+)
 
 export const usersToConversations = snakeCase.table(
   "users_to_conversations",
@@ -68,8 +79,6 @@ export const usersToConversations = snakeCase.table(
   },
   (t) => [
     primaryKey({ columns: [t.userId, t.conversationId] }),
-    index("users_to_conversations_user_id_idx").on(t.userId),
-    index("users_to_conversations_conversation_id_idx").on(t.conversationId),
     index("users_to_conversations_composite_idx").on(
       t.userId,
       t.conversationId
