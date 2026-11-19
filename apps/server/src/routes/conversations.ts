@@ -1,6 +1,11 @@
 import { Router } from "express"
-import { startOrGetConvo } from "../controllers/conversations.ts"
+
+import {
+  getConversations,
+  startOrGetConvo,
+} from "../controllers/conversations.ts"
 
 export const conversationsRouter: Router = Router()
 
+conversationsRouter.get("/", getConversations)
 conversationsRouter.post("/", startOrGetConvo)

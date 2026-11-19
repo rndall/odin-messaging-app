@@ -1,10 +1,14 @@
 import request from "supertest"
 
 import { conversations, db, users, usersToConversations } from "@workspace/db"
-import type { StartOrGetConvoResponse } from "@workspace/shared"
+import type {
+  ConversationsResponse,
+  StartOrGetConvoResponse,
+} from "@workspace/shared"
 import { getDirectKey } from "@workspace/shared/utils"
 import { app } from "../app.ts"
 import { createUser, generateToken } from "../utils/auth.ts"
+import { describeUnauthorized } from "./utils/auth.ts"
 
 describe("Conversations", () => {
   beforeEach(async () => {
@@ -17,15 +21,106 @@ describe("Conversations", () => {
     await db.$client.end()
   })
 
+  const seedUser = async (username: string) => {
+    const user = await createUser({ username, password: "password123" })
+
+    if (!user) throw new Error("Failed to create user")
+
+    return user
+  }
+
+  describe("get conversations route", () => {
+    const getConversations = (token: string) =>
+      request(app)
+        .get("/api/conversations")
+        .set("Authorization", `Bearer ${token}`)
+
+    const startConversation = (token: string, toUserId: number) =>
+      request(app)
+        .post("/api/conversations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ toUserId })
+
+    test("returns the user's conversations", async () => {
+      const user = await seedUser("user")
+      const otherUser = await seedUser("other")
+
+      const token = generateToken(user)
+
+      await startConversation(token, otherUser.id)
+
+      const res = await getConversations(token)
+
+      expect(res.headers["content-type"]).toMatch(/json/)
+      expect(res.status).toBe(200)
+      expect(res.body).toHaveLength(1)
+      expect((res.body as ConversationsResponse[])[0]).toMatchObject({
+        id: expect.any(String),
+        type: "direct",
+        name: null,
+      })
+    })
+
+    test("returns an empty array when the user has no conversations", async () => {
+      const user = await seedUser("user")
+
+      const res = await getConversations(generateToken(user))
+
+      expect(res.headers["content-type"]).toMatch(/json/)
+      expect(res.status).toBe(200)
+      expect(res.body).toStrictEqual([])
+    })
+
+    test("returns only conversations the user is a member of", async () => {
+      const user = await seedUser("user")
+      const alice = await seedUser("alice")
+      const bob = await seedUser("bob")
+
+      const aliceBob = await startConversation(generateToken(alice), bob.id)
+      const userAlice = await startConversation(generateToken(user), alice.id)
+
+      expect(aliceBob.status).toBe(201)
+      expect(userAlice.status).toBe(201)
+
+      const res = await getConversations(generateToken(user))
+
+      expect(res.status).toBe(200)
+      expect(res.body).toStrictEqual([
+        {
+          id: (userAlice.body as StartOrGetConvoResponse).id,
+          type: "direct",
+          name: null,
+        },
+      ])
+    })
+
+    test("returns group conversations with their name", async () => {
+      const user = await seedUser("user")
+
+      const [group] = await db
+        .insert(conversations)
+        .values({ type: "group", name: "Team" })
+        .returning({ id: conversations.id })
+
+      if (!group) throw new Error("Failed to create group")
+
+      await db
+        .insert(usersToConversations)
+        .values({ conversationId: group.id, userId: user.id })
+
+      const res = await getConversations(generateToken(user))
+
+      expect(res.headers["content-type"]).toMatch(/json/)
+      expect(res.status).toBe(200)
+      expect(res.body).toStrictEqual([
+        { id: group.id, type: "group", name: "Team" },
+      ])
+    })
+
+    describeUnauthorized(() => request(app).get("/api/conversations"))
+  })
+
   describe("start or get route", () => {
-    const seedUser = async (username: string) => {
-      const user = await createUser({ username, password: "password123" })
-
-      if (!user) throw new Error("Failed to create user")
-
-      return user
-    }
-
     const postConversation = (token: string, body: object) =>
       request(app)
         .post("/api/conversations")
@@ -37,7 +132,7 @@ describe("Conversations", () => {
       const recipient = await seedUser("recipient")
 
       const res = await postConversation(generateToken(sender), {
-        toUsername: "recipient",
+        toUserId: recipient.id,
       })
 
       expect(res.headers["content-type"]).toMatch(/json/)
@@ -64,11 +159,15 @@ describe("Conversations", () => {
 
     test("returns the existing conversation on a repeat request", async () => {
       const sender = await seedUser("sender")
-      await seedUser("recipient")
+      const recipient = await seedUser("recipient")
       const token = generateToken(sender)
 
-      const first = await postConversation(token, { toUsername: "recipient" })
-      const second = await postConversation(token, { toUsername: "recipient" })
+      const first = await postConversation(token, {
+        toUserId: recipient.id,
+      })
+      const second = await postConversation(token, {
+        toUserId: recipient.id,
+      })
 
       expect(first.status).toBe(201)
       expect(second.status).toBe(200)
@@ -79,12 +178,12 @@ describe("Conversations", () => {
 
     test("handles concurrent requests without duplicating the conversation", async () => {
       const sender = await seedUser("sender")
-      await seedUser("recipient")
+      const recipient = await seedUser("recipient")
       const token = generateToken(sender)
 
       const [first, second] = await Promise.all([
-        postConversation(token, { toUsername: "recipient" }),
-        postConversation(token, { toUsername: "recipient" }),
+        postConversation(token, { toUserId: recipient.id }),
+        postConversation(token, { toUserId: recipient.id }),
       ])
 
       expect([first.status, second.status].sort((a, b) => a - b)).toStrictEqual(
@@ -100,10 +199,10 @@ describe("Conversations", () => {
       const recipient = await seedUser("recipient")
 
       const first = await postConversation(generateToken(sender), {
-        toUsername: "recipient",
+        toUserId: recipient.id,
       })
       const reverse = await postConversation(generateToken(recipient), {
-        toUsername: "sender",
+        toUserId: sender.id,
       })
 
       expect(first.status).toBe(201)
@@ -118,7 +217,7 @@ describe("Conversations", () => {
       const sender = await seedUser("sender")
 
       const res = await postConversation(generateToken(sender), {
-        toUsername: "ghost",
+        toUserId: 999999,
       })
 
       expect(res.headers["content-type"]).toMatch(/json/)
@@ -130,7 +229,7 @@ describe("Conversations", () => {
       const sender = await seedUser("sender")
 
       const res = await postConversation(generateToken(sender), {
-        toUsername: "sender",
+        toUserId: sender.id,
       })
 
       expect(res.headers["content-type"]).toMatch(/json/)
@@ -142,11 +241,12 @@ describe("Conversations", () => {
 
     describe("body validation", () => {
       test.each([
-        { description: "missing toUsername", body: {} },
+        { description: "missing toUserId", body: {} },
         {
-          description: "toUsername is not a string",
-          body: { toUsername: 123 },
+          description: "toUserId is not a number",
+          body: { toUserId: "recipient" },
         },
+        { description: "toUserId is not positive", body: { toUserId: 0 } },
       ])("returns 422 with $description", async ({ body }) => {
         const sender = await seedUser("sender")
 
@@ -157,21 +257,8 @@ describe("Conversations", () => {
       })
     })
 
-    describe("authentication", () => {
-      test.each([
-        { description: "no token", authorization: undefined },
-        { description: "invalid token", authorization: "Bearer invalid" },
-      ])("returns 401 with $description", async ({ authorization }) => {
-        await seedUser("sender")
-
-        const res = await request(app)
-          .post("/api/conversations")
-          .set(authorization ? { Authorization: authorization } : {})
-          .send({ toUsername: "recipient" })
-
-        expect(res.headers["content-type"]).toMatch(/json/)
-        expect(res.status).toBe(401)
-      })
-    })
+    describeUnauthorized(() =>
+      request(app).post("/api/conversations").send({ toUserId: 1 })
+    )
   })
 })

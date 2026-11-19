@@ -3,6 +3,7 @@ import request from "supertest"
 import { db, users } from "@workspace/db"
 import { app } from "../app.ts"
 import { generateToken } from "../utils/auth.ts"
+import { describeUnauthorized } from "./utils/auth.ts"
 
 describe("Users", () => {
   beforeEach(async () => {
@@ -72,5 +73,7 @@ describe("Users", () => {
         expect(res.body).toMatchObject(response)
       })
     })
+
+    describeUnauthorized(() => request(app).get("/api/users"))
   })
 })

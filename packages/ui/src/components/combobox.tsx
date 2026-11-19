@@ -44,6 +44,7 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@workspace/ui/components/input-group"
+import { Spinner } from "@workspace/ui/components/spinner"
 
 function ComboboxValue<T>({ ...props }: ComboBoxValueProps<T>) {
   return <ComboBoxValuePrimitive data-slot="combobox-value" {...props} />
@@ -190,8 +191,9 @@ function ComboboxList<T extends object>({
 function ComboboxItem<T extends object>({
   className,
   children,
+  loading,
   ...props
-}: ListBoxItemProps<T>) {
+}: ListBoxItemProps<T> & { loading?: boolean }) {
   return (
     <ListBoxItemPrimitive
       data-slot="combobox-item"
@@ -206,7 +208,9 @@ function ComboboxItem<T extends object>({
         <>
           {children}
           <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center">
-            {isSelected ? (
+            {loading ? (
+              <Spinner />
+            ) : isSelected ? (
               <HugeiconsIcon
                 icon={Tick02Icon}
                 strokeWidth={2}

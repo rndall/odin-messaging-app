@@ -1,7 +1,9 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 
+import { useStartOrGetConversationMutation } from "@/features/conversations/hooks/use-start-or-get-conversation-mutation"
 import { useDebounce } from "@/hooks/use-debounce"
+import type { UsersReturn } from "@workspace/shared"
 import {
   Avatar,
   AvatarFallback,
@@ -29,31 +31,72 @@ import {
 import { Spinner } from "@workspace/ui/components/spinner"
 import { userQueries } from "../queries"
 
-export default function UserSearch() {
-  const [search, setSearch] = useState("")
-  const debouncedSearch = useDebounce(search, 300)
+const getUserText = (user: UsersReturn) =>
+  user.profileInfo?.displayName || user.username
 
-  const { data, refetch, isPending, error } = useQuery({
+export default function UserSearch() {
+  const [fieldState, setFieldState] = useState<{
+    value: number | null
+    inputValue: string
+  }>({ value: null, inputValue: "" })
+  const debouncedSearch = useDebounce(fieldState.inputValue, 300)
+
+  const {
+    data: users,
+    refetch: refetchUsers,
+    isPending: isUsersPending,
+    error: usersError,
+  } = useQuery({
     ...userQueries.list({ search: debouncedSearch }),
-    placeholderData: keepPreviousData,
     refetchOnWindowFocus: false,
   })
 
+  const {
+    mutate: startOrGetConvo,
+    isPending: isConvoPending,
+    variables: convoVariables,
+  } = useStartOrGetConversationMutation()
+
   // TODO: Handle error
-  if (error) return
+  if (usersError) return
+
+  const handleInputChange = (value: string) => {
+    setFieldState((prevState) => ({
+      inputValue: value,
+      value: value === "" ? null : prevState.value,
+    }))
+  }
 
   return (
     <div>
       <Combobox
-        allowsCustomValue
         allowsEmptyCollection
         menuTrigger="focus"
-        onInputChange={setSearch}
-        inputValue={search}
+        onInputChange={handleInputChange}
+        inputValue={fieldState.inputValue}
         aria-label="Send message to"
-        items={data}
+        items={users}
+        value={fieldState.value}
+        onChange={(value) => {
+          if (typeof value !== "number") return
+
+          const user = users?.find((u) => u.id === value)
+          if (!user) return
+          const inputValue = getUserText(user)
+
+          startOrGetConvo(
+            { toUserId: value },
+            {
+              onSuccess: () => {
+                setFieldState({ inputValue, value })
+              },
+            }
+          )
+        }}
+        onFocus={() => refetchUsers()}
+        autoFocus
       >
-        <ComboboxInput autoFocus showTrigger={false} onFocus={() => refetch()}>
+        <ComboboxInput showTrigger={false}>
           <InputGroupAddon>
             <InputGroupText>To:</InputGroupText>
           </InputGroupAddon>
@@ -66,33 +109,35 @@ export default function UserSearch() {
           <ComboboxList
             renderEmptyState={() => (
               <ComboboxEmpty>
-                {isPending ? <Spinner /> : "No items found."}
+                {isUsersPending ? <Spinner /> : "No items found."}
               </ComboboxEmpty>
             )}
           >
-            {!isPending &&
-              data.map((user) => (
+            {!isUsersPending &&
+              users.map((user) => (
                 <ComboboxItem
-                  onPress={() => console.log(user)}
                   key={user.id}
                   id={user.id}
-                  textValue={user.profileInfo.displayName || user.username}
+                  textValue={getUserText(user)}
+                  loading={
+                    isConvoPending && convoVariables.toUserId === user.id
+                  }
                 >
                   <Item size="xs">
                     <ItemMedia>
                       <Avatar>
                         <AvatarImage
-                          src={user.profileInfo.avatarUrl ?? undefined}
+                          src={user.profileInfo?.avatarUrl ?? undefined}
                         />
                         <AvatarFallback>
-                          {user.profileInfo.displayName
+                          {user.profileInfo?.displayName
                             ? user.profileInfo.displayName[0].toUpperCase()
                             : user.username[0].toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                     </ItemMedia>
                     <ItemContent>
-                      {!user.profileInfo.displayName ? (
+                      {!user.profileInfo?.displayName ? (
                         <ItemTitle>{user.username}</ItemTitle>
                       ) : (
                         <>
