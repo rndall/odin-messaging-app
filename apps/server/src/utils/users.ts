@@ -1,7 +1,15 @@
 import { db } from "@workspace/db"
 import type { UsersQuery } from "@workspace/shared"
 
-export const findUsers = async ({ search, limit }: UsersQuery) => {
+interface FindOtherUsersParams extends UsersQuery {
+  currentUserId: number
+}
+
+export const findOtherUsers = async ({
+  search,
+  limit,
+  currentUserId,
+}: FindOtherUsersParams) => {
   const searchPattern = `%${search}%`
 
   const users = await db.query.users.findMany({
@@ -20,6 +28,8 @@ export const findUsers = async ({ search, limit }: UsersQuery) => {
           { profileInfo: { displayName: { ilike: searchPattern } } },
         ],
       }),
+
+      NOT: { id: currentUserId },
     },
   })
 

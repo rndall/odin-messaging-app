@@ -6,21 +6,30 @@ import { generateToken } from "../utils/auth.ts"
 import { describeUnauthorized } from "./utils/auth.ts"
 
 describe("Users", () => {
+  let token: string
+
   beforeEach(async () => {
     await db.delete(users)
+
+    const [currentUser] = await db
+      .insert(users)
+      .values({ username: "currentUser", passwordHash: "hashedpassword" })
+      .returning({ id: users.id, username: users.username })
+
+    if (!currentUser) throw new Error("Failed to create user")
+
+    token = generateToken(currentUser)
   })
 
   afterAll(async () => {
     await db.$client.end()
   })
 
-  const token = generateToken({ id: 1, username: "testuser" })
-
   const getUsers = () =>
     request(app).get("/api/users").set("Authorization", `Bearer ${token}`)
 
   describe("list route", () => {
-    test("returns all users", async () => {
+    test("returns all users except the current user", async () => {
       await db.insert(users).values([
         { username: "user1", passwordHash: "hashedpassword" },
         { username: "user2", passwordHash: "hashedpassword" },
@@ -36,12 +45,25 @@ describe("Users", () => {
       ])
     })
 
-    test("returns empty array on no users", async () => {
+    test("returns empty array when only the current user exists", async () => {
       const res = await getUsers()
 
       expect(res.headers["content-type"]).toMatch(/json/)
       expect(res.status).toBe(200)
       expect(res.body).toStrictEqual([])
+    })
+
+    test("excludes the current user from search results", async () => {
+      await db.insert(users).values({
+        username: "otherUser",
+        passwordHash: "hashedpassword",
+      })
+
+      const res = await getUsers().query({ search: "user" })
+
+      expect(res.headers["content-type"]).toMatch(/json/)
+      expect(res.status).toBe(200)
+      expect(res.body).toMatchObject([{ username: "otherUser" }])
     })
 
     describe("query", () => {
