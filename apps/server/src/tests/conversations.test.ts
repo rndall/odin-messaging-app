@@ -8,10 +8,7 @@ import {
   users,
   usersToConversations,
 } from "@workspace/db"
-import type {
-  ConversationsResponse,
-  StartOrGetConvoResponse,
-} from "@workspace/shared"
+import type { Conversation, ConversationsResponse } from "@workspace/shared"
 import { getDirectKey } from "@workspace/shared/utils"
 import { app } from "../app.ts"
 import { createUser, generateToken } from "../utils/auth.ts"
@@ -38,17 +35,17 @@ describe("Conversations", () => {
     return user
   }
 
+  const startConversation = (token: string, toUserId: number) =>
+    request(app)
+      .post("/api/conversations")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ toUserId })
+
   describe("get conversations route", () => {
     const getConversations = (token: string) =>
       request(app)
         .get("/api/conversations")
         .set("Authorization", `Bearer ${token}`)
-
-    const startConversation = (token: string, toUserId: number) =>
-      request(app)
-        .post("/api/conversations")
-        .set("Authorization", `Bearer ${token}`)
-        .send({ toUserId })
 
     test("returns the user's conversations", async () => {
       const user = await seedUser("user")
@@ -97,7 +94,7 @@ describe("Conversations", () => {
       expect(res.status).toBe(200)
       expect(res.body).toStrictEqual([
         {
-          id: (userAlice.body as StartOrGetConvoResponse).id,
+          id: (userAlice.body as Conversation).id,
           type: "direct",
           display: { title: "alice", avatarUrl: null },
           lastMessage: null,
@@ -165,7 +162,7 @@ describe("Conversations", () => {
       const other = await seedUser("other")
 
       const created = await startConversation(generateToken(user), other.id)
-      const conversationId = (created.body as StartOrGetConvoResponse).id
+      const conversationId = (created.body as Conversation).id
       const createdAt = new Date("2026-01-01T10:00:00.000Z")
       const editedAt = new Date("2026-01-02T10:00:00.000Z")
 
@@ -199,7 +196,7 @@ describe("Conversations", () => {
       const other = await seedUser("other")
 
       const created = await startConversation(generateToken(user), other.id)
-      const conversationId = (created.body as StartOrGetConvoResponse).id
+      const conversationId = (created.body as Conversation).id
       const newestCreatedAt = new Date("2026-01-02T10:00:00.000Z")
 
       await db.insert(messages).values([
@@ -263,7 +260,7 @@ describe("Conversations", () => {
       const created = await db.query.conversations.findFirst({
         where: { directKey: getDirectKey(sender.id, recipient.id) },
       })
-      expect(created?.id).toBe((res.body as StartOrGetConvoResponse).id)
+      expect(created?.id).toBe((res.body as Conversation).id)
 
       const members = await db.query.usersToConversations.findMany({
         where: { conversationId: created!.id },
@@ -324,8 +321,8 @@ describe("Conversations", () => {
 
       expect(first.status).toBe(201)
       expect(reverse.status).toBe(200)
-      expect((reverse.body as StartOrGetConvoResponse).id).toBe(
-        (first.body as StartOrGetConvoResponse).id
+      expect((reverse.body as Conversation).id).toBe(
+        (first.body as Conversation).id
       )
       expect(await db.select().from(conversations)).toHaveLength(1)
     })
@@ -376,6 +373,79 @@ describe("Conversations", () => {
 
     describeUnauthorized(() =>
       request(app).post("/api/conversations").send({ toUserId: 1 })
+    )
+  })
+
+  describe("get conversation route", () => {
+    const getConversation = (token: string, conversationId: string) =>
+      request(app)
+        .get(`/api/conversations/${conversationId}`)
+        .set("Authorization", `Bearer ${token}`)
+
+    test("returns a direct conversation by id", async () => {
+      const user = await seedUser("user")
+      const other = await seedUser("other")
+      const created = await startConversation(generateToken(user), other.id)
+      const conversationId = (created.body as Conversation).id
+
+      const res = await getConversation(generateToken(user), conversationId)
+
+      expect(res.headers["content-type"]).toMatch(/json/)
+      expect(res.status).toBe(200)
+      expect(res.body).toStrictEqual({
+        id: conversationId,
+        type: "direct",
+        name: null,
+      })
+    })
+
+    test("returns a group conversation with its name", async () => {
+      const user = await seedUser("user")
+
+      const [group] = await db
+        .insert(conversations)
+        .values({ type: "group", name: "Team" })
+        .returning({ id: conversations.id })
+
+      if (!group) throw new Error("Failed to create group")
+
+      const res = await getConversation(generateToken(user), group.id)
+
+      expect(res.headers["content-type"]).toMatch(/json/)
+      expect(res.status).toBe(200)
+      expect(res.body).toStrictEqual({
+        id: group.id,
+        type: "group",
+        name: "Team",
+      })
+    })
+
+    test("returns 404 when the conversation does not exist", async () => {
+      const user = await seedUser("user")
+
+      const res = await getConversation(
+        generateToken(user),
+        "00000000-0000-4000-8000-000000000000"
+      )
+
+      expect(res.headers["content-type"]).toMatch(/json/)
+      expect(res.status).toBe(404)
+      expect(res.body).toStrictEqual({ message: "Conversation not found" })
+    })
+
+    test("returns 422 when the id is not a uuid", async () => {
+      const user = await seedUser("user")
+
+      const res = await getConversation(generateToken(user), "not-a-uuid")
+
+      expect(res.headers["content-type"]).toMatch(/json/)
+      expect(res.status).toBe(422)
+    })
+
+    describeUnauthorized(() =>
+      request(app).get(
+        "/api/conversations/00000000-0000-4000-8000-000000000000"
+      )
     )
   })
 })

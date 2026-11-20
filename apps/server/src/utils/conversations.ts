@@ -2,9 +2,15 @@ import { conversations, db, usersToConversations } from "@workspace/db"
 import type { ConversationsResponse } from "@workspace/shared"
 import { getDirectKey, getUserText } from "@workspace/shared/utils"
 
+const conversationColumns = {
+  id: true,
+  type: true,
+  name: true,
+} as const
+
 const findConversationRows = (userId: number) =>
   db.query.conversations.findMany({
-    columns: { id: true, type: true, name: true },
+    columns: conversationColumns,
     where: { users: { id: userId } },
     with: {
       users: {
@@ -76,6 +82,12 @@ export const findConversations = async (
   })
 }
 
+export const findConversationById = async (conversationId: string) =>
+  db.query.conversations.findFirst({
+    where: { id: conversationId },
+    columns: conversationColumns,
+  })
+
 export const getOrCreateConversation = ({
   userId,
   recipientId,
@@ -107,7 +119,7 @@ export const getOrCreateConversation = ({
 
     const existing = await tx.query.conversations.findFirst({
       where: { directKey },
-      columns: { id: true, name: true, type: true },
+      columns: conversationColumns,
     })
 
     if (!existing) {

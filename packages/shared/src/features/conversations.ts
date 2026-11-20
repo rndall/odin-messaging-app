@@ -22,17 +22,21 @@ export const conversationsResponseSchema = z.object({
 })
 export type ConversationsResponse = z.infer<typeof conversationsResponseSchema>
 
+export const conversationSchema = z.object({
+  id: z.uuid(),
+  type: z.enum(conversationTypes),
+  name: z.string().nullable(),
+})
+export type Conversation = z.infer<typeof conversationSchema>
+
 // POST /
 export const startOrGetConvoBodySchema = z.object({
   toUserId: z.number().int().positive(),
 })
 export type StartOrGetConvoBody = z.infer<typeof startOrGetConvoBodySchema>
 
-export const startOrGetConvoResponseSchema = z.object({
-  id: z.string(),
-  type: z.enum(["direct", "group"]),
-  name: z.string().nullable(),
+// GET /:conversationId
+export const conversationParamsSchema = z.object({
+  conversationId: z.uuid(),
 })
-export type StartOrGetConvoResponse = z.infer<
-  typeof startOrGetConvoResponseSchema
->
+export type ConversationParams = z.infer<typeof conversationParamsSchema>

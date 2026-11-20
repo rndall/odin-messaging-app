@@ -2,8 +2,8 @@ import z from "zod"
 
 import { apiUrl, parseJson } from "@/utils/api"
 import {
+  conversationSchema,
   conversationsResponseSchema,
-  startOrGetConvoResponseSchema,
   type StartOrGetConvoBody,
 } from "@workspace/shared"
 import { getToken } from "../auth/utils"
@@ -26,5 +26,5 @@ export const startOrGetConvo = async (body: StartOrGetConvoBody) => {
     },
     body: JSON.stringify(body),
   })
-  return parseJson(res, startOrGetConvoResponseSchema)
+  return parseJson(res, conversationSchema)
 }
