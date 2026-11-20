@@ -1,6 +1,13 @@
 import request from "supertest"
 
-import { conversations, db, users, usersToConversations } from "@workspace/db"
+import {
+  conversations,
+  db,
+  messages,
+  profileInfo,
+  users,
+  usersToConversations,
+} from "@workspace/db"
 import type {
   ConversationsResponse,
   StartOrGetConvoResponse,
@@ -12,8 +19,10 @@ import { describeUnauthorized } from "./utils/auth.ts"
 
 describe("Conversations", () => {
   beforeEach(async () => {
+    await db.delete(messages)
     await db.delete(usersToConversations)
     await db.delete(conversations)
+    await db.delete(profileInfo)
     await db.delete(users)
   })
 
@@ -54,10 +63,11 @@ describe("Conversations", () => {
       expect(res.headers["content-type"]).toMatch(/json/)
       expect(res.status).toBe(200)
       expect(res.body).toHaveLength(1)
-      expect((res.body as ConversationsResponse[])[0]).toMatchObject({
+      expect((res.body as ConversationsResponse[])[0]).toStrictEqual({
         id: expect.any(String),
         type: "direct",
-        name: null,
+        display: { title: "other", avatarUrl: null },
+        lastMessage: null,
       })
     })
 
@@ -89,7 +99,8 @@ describe("Conversations", () => {
         {
           id: (userAlice.body as StartOrGetConvoResponse).id,
           type: "direct",
-          name: null,
+          display: { title: "alice", avatarUrl: null },
+          lastMessage: null,
         },
       ])
     })
@@ -113,7 +124,113 @@ describe("Conversations", () => {
       expect(res.headers["content-type"]).toMatch(/json/)
       expect(res.status).toBe(200)
       expect(res.body).toStrictEqual([
-        { id: group.id, type: "group", name: "Team" },
+        {
+          id: group.id,
+          type: "group",
+          display: { title: "Team", avatarUrl: null },
+          lastMessage: null,
+        },
+      ])
+    })
+
+    test("uses the other user's display name and avatar", async () => {
+      const user = await seedUser("user")
+      const other = await seedUser("other")
+
+      await db.insert(profileInfo).values({
+        userId: other.id,
+        displayName: "Other Name",
+        avatarUrl: "https://example.com/avatar.png",
+      })
+
+      await startConversation(generateToken(user), other.id)
+
+      const res = await getConversations(generateToken(user))
+
+      expect(res.body).toStrictEqual([
+        {
+          id: expect.any(String),
+          type: "direct",
+          display: {
+            title: "Other Name",
+            avatarUrl: "https://example.com/avatar.png",
+          },
+          lastMessage: null,
+        },
+      ])
+    })
+
+    test("returns the last message with ISO dates", async () => {
+      const user = await seedUser("user")
+      const other = await seedUser("other")
+
+      const created = await startConversation(generateToken(user), other.id)
+      const conversationId = (created.body as StartOrGetConvoResponse).id
+      const createdAt = new Date("2026-01-01T10:00:00.000Z")
+      const editedAt = new Date("2026-01-02T10:00:00.000Z")
+
+      await db.insert(messages).values({
+        conversationId,
+        senderId: other.id,
+        content: "hello",
+        createdAt,
+        editedAt,
+      })
+
+      const res = await getConversations(generateToken(user))
+
+      expect(res.body).toStrictEqual([
+        {
+          id: conversationId,
+          type: "direct",
+          display: { title: "other", avatarUrl: null },
+          lastMessage: {
+            senderId: other.id,
+            content: "hello",
+            createdAt: createdAt.toISOString(),
+            editedAt: editedAt.toISOString(),
+          },
+        },
+      ])
+    })
+
+    test("returns the newest message when several exist", async () => {
+      const user = await seedUser("user")
+      const other = await seedUser("other")
+
+      const created = await startConversation(generateToken(user), other.id)
+      const conversationId = (created.body as StartOrGetConvoResponse).id
+      const newestCreatedAt = new Date("2026-01-02T10:00:00.000Z")
+
+      await db.insert(messages).values([
+        {
+          conversationId,
+          senderId: other.id,
+          content: "old",
+          createdAt: new Date("2026-01-01T10:00:00.000Z"),
+        },
+        {
+          conversationId,
+          senderId: user.id,
+          content: "new",
+          createdAt: newestCreatedAt,
+        },
+      ])
+
+      const res = await getConversations(generateToken(user))
+
+      expect(res.body).toStrictEqual([
+        {
+          id: conversationId,
+          type: "direct",
+          display: { title: "other", avatarUrl: null },
+          lastMessage: {
+            senderId: user.id,
+            content: "new",
+            createdAt: newestCreatedAt.toISOString(),
+            editedAt: null,
+          },
+        },
       ])
     })
 

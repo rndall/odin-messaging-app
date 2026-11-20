@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { isAuthenticated } from "@/features/auth/utils"
+import { conversationQueries } from "@/features/conversations/queries"
 import { SidebarProvider } from "@workspace/ui/components/sidebar"
 
 export const Route = createFileRoute("/_authed")({
@@ -14,6 +15,15 @@ export const Route = createFileRoute("/_authed")({
         },
       })
     }
+  },
+  context: () => ({
+    conversationsQueryOptions: conversationQueries.list(),
+  }),
+  loader: ({ context }) => {
+    context.queryClient.query({
+      ...context.conversationsQueryOptions,
+      staleTime: "static",
+    })
   },
   component: RouteComponent,
 })

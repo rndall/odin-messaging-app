@@ -1,3 +1,4 @@
+import { conversationTypes } from "@workspace/shared"
 import { defineRelations, sql } from "drizzle-orm"
 import {
   check,
@@ -46,10 +47,10 @@ export const messages = snakeCase.table(
   ]
 )
 
-export const conversationTypeEnum = pgEnum("conversation_type", [
-  "direct",
-  "group",
-])
+export const conversationTypeEnum = pgEnum(
+  "conversation_type",
+  conversationTypes
+)
 
 export const conversations = snakeCase.table(
   "conversations",

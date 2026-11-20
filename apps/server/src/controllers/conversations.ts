@@ -7,21 +7,16 @@ import {
   type ConversationsResponse,
   type StartOrGetConvoResponse,
 } from "@workspace/shared"
-import { getDirectKey } from "@workspace/shared/utils"
-import { getOrCreateConversation } from "../utils/conversations.ts"
+import {
+  findConversations,
+  getOrCreateConversation,
+} from "../utils/conversations.ts"
 import { makeValidatedEndpoint } from "../utils/endpoint.ts"
 
 export const getConversations = makeValidatedEndpoint(
   {},
   async (req, res: Response<ConversationsResponse[]>) => {
-    const user = req.user!
-
-    const conversations = await db.query.conversations.findMany({
-      columns: { id: true, type: true, name: true },
-      where: { users: { id: user.id } },
-    })
-
-    res.json(conversations)
+    res.json(await findConversations(req.user!.id))
   }
 )
 
@@ -48,12 +43,9 @@ export const startOrGetConvo = makeValidatedEndpoint(
       throw createHttpError(400, "Cannot start a conversation with yourself")
     }
 
-    const directKey = getDirectKey(user.id, recipient.id)
-
     const result = await getOrCreateConversation({
       userId: user.id,
       recipientId: recipient.id,
-      directKey,
     })
 
     res.status(result.isNew ? 201 : 200).json(result.conversation)

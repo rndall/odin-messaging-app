@@ -3,7 +3,8 @@ import { useState } from "react"
 
 import { useStartOrGetConversationMutation } from "@/features/conversations/hooks/use-start-or-get-conversation-mutation"
 import { useDebounce } from "@/hooks/use-debounce"
-import type { UsersReturn } from "@workspace/shared"
+import { useNavigate } from "@tanstack/react-router"
+import { getFirstTwoInitials, getUserText } from "@workspace/shared/utils"
 import {
   Avatar,
   AvatarFallback,
@@ -31,9 +32,6 @@ import {
 import { Spinner } from "@workspace/ui/components/spinner"
 import { userQueries } from "../queries"
 
-const getUserText = (user: UsersReturn) =>
-  user.profileInfo?.displayName || user.username
-
 export default function UserSearch() {
   const [fieldState, setFieldState] = useState<{
     value: number | null
@@ -56,6 +54,8 @@ export default function UserSearch() {
     isPending: isConvoPending,
     variables: convoVariables,
   } = useStartOrGetConversationMutation()
+
+  const navigate = useNavigate()
 
   // TODO: Handle error
   if (usersError) return
@@ -87,8 +87,12 @@ export default function UserSearch() {
           startOrGetConvo(
             { toUserId: value },
             {
-              onSuccess: () => {
+              onSuccess: ({ id }) => {
                 setFieldState({ inputValue, value })
+                navigate({
+                  to: "/$conversationId",
+                  params: { conversationId: id },
+                })
               },
             }
           )
@@ -128,11 +132,10 @@ export default function UserSearch() {
                       <Avatar>
                         <AvatarImage
                           src={user.profileInfo?.avatarUrl ?? undefined}
+                          alt={getUserText(user)}
                         />
                         <AvatarFallback>
-                          {user.profileInfo?.displayName
-                            ? user.profileInfo.displayName[0].toUpperCase()
-                            : user.username[0].toUpperCase()}
+                          {getFirstTwoInitials(getUserText(user))}
                         </AvatarFallback>
                       </Avatar>
                     </ItemMedia>

@@ -10,7 +10,7 @@ import {
 
 export default function ChatHeader() {
   return (
-    <SidebarGroup>
+    <SidebarGroup className="pb-0">
       <SidebarGroupLabel className="justify-between">
         <Link to="/" className="text-xl font-bold">
           Chats

@@ -1,15 +1,91 @@
 import { conversations, db, usersToConversations } from "@workspace/db"
+import type { ConversationsResponse } from "@workspace/shared"
+import { getDirectKey, getUserText } from "@workspace/shared/utils"
+
+const findConversationRows = (userId: number) =>
+  db.query.conversations.findMany({
+    columns: { id: true, type: true, name: true },
+    where: { users: { id: userId } },
+    with: {
+      users: {
+        where: { id: { ne: userId } },
+        columns: { username: true },
+        with: {
+          profileInfo: { columns: { displayName: true, avatarUrl: true } },
+        },
+      },
+      messages: {
+        columns: {
+          senderId: true,
+          content: true,
+          createdAt: true,
+          editedAt: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+          id: "desc",
+        },
+        limit: 1,
+      },
+    },
+  })
+
+type ConversationRow = Awaited<ReturnType<typeof findConversationRows>>[number]
+
+const getDisplay = (conversation: ConversationRow) => {
+  if (conversation.type === "group") {
+    return {
+      title:
+        conversation.name ??
+        conversation.users.map((user) => getUserText(user)).join(", "),
+      avatarUrl: null,
+    }
+  }
+
+  const otherUser = conversation.users[0]
+  if (!otherUser)
+    throw new Error("Direct conversation must have exactly one other user")
+
+  return {
+    title: getUserText(otherUser),
+    avatarUrl: otherUser.profileInfo?.avatarUrl ?? null,
+  }
+}
+
+export const findConversations = async (
+  userId: number
+): Promise<ConversationsResponse[]> => {
+  const conversations = await findConversationRows(userId)
+
+  return conversations.map((conversation) => {
+    const message = conversation.messages[0] ?? null
+
+    return {
+      id: conversation.id,
+      type: conversation.type,
+      display: getDisplay(conversation),
+      lastMessage: message
+        ? {
+            senderId: message.senderId,
+            content: message.content,
+            createdAt: message.createdAt.toISOString(),
+            editedAt: message.editedAt?.toISOString() ?? null,
+          }
+        : null,
+    }
+  })
+}
 
 export const getOrCreateConversation = ({
   userId,
   recipientId,
-  directKey,
 }: {
   userId: number
   recipientId: number
-  directKey: string
-}) =>
-  db.transaction(async (tx) => {
+}) => {
+  const directKey = getDirectKey(userId, recipientId)
+
+  return db.transaction(async (tx) => {
     const [created] = await tx
       .insert(conversations)
       .values([{ type: "direct", directKey }])
@@ -40,3 +116,4 @@ export const getOrCreateConversation = ({
 
     return { conversation: existing, isNew: false }
   })
+}
