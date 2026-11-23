@@ -3,12 +3,16 @@ import createHttpError from "http-errors"
 
 import { db } from "@workspace/db"
 import {
+  conversationParamsSchema,
   startOrGetConvoBodySchema,
+  type ConversationResponse,
   type ConversationsResponse,
   type StartOrGetConvoResponse,
 } from "@workspace/shared"
 import {
+  findConversationById,
   findConversations,
+  getDisplay,
   getOrCreateConversation,
 } from "../utils/conversations.ts"
 import { makeValidatedEndpoint } from "../utils/endpoint.ts"
@@ -49,5 +53,27 @@ export const startOrGetConvo = makeValidatedEndpoint(
     })
 
     res.status(result.isNew ? 201 : 200).json(result.conversation)
+  }
+)
+
+export const getConversation = makeValidatedEndpoint(
+  {
+    params: conversationParamsSchema,
+  },
+  async (req, res: Response<ConversationResponse>, { params }) => {
+    const conversation = await findConversationById({
+      conversationId: params.conversationId,
+      userId: req.user!.id,
+    })
+
+    if (!conversation) {
+      throw createHttpError(404, "Conversation not found")
+    }
+
+    res.json({
+      id: conversation.id,
+      type: conversation.type,
+      display: getDisplay(conversation),
+    })
   }
 )

@@ -2,9 +2,15 @@ import { conversations, db, usersToConversations } from "@workspace/db"
 import type { ConversationsResponse } from "@workspace/shared"
 import { getDirectKey, getUserText } from "@workspace/shared/utils"
 
+const conversationColumns = {
+  id: true,
+  type: true,
+  name: true,
+} as const
+
 const findConversationRows = (userId: number) =>
   db.query.conversations.findMany({
-    columns: { id: true, type: true, name: true },
+    columns: conversationColumns,
     where: { users: { id: userId } },
     with: {
       users: {
@@ -30,9 +36,11 @@ const findConversationRows = (userId: number) =>
     },
   })
 
-type ConversationRow = Awaited<ReturnType<typeof findConversationRows>>[number]
+type ConversationRow = NonNullable<
+  Awaited<ReturnType<typeof findConversationById>>
+>
 
-const getDisplay = (conversation: ConversationRow) => {
+export const getDisplay = (conversation: ConversationRow) => {
   if (conversation.type === "group") {
     return {
       title:
@@ -76,6 +84,27 @@ export const findConversations = async (
   })
 }
 
+export const findConversationById = async ({
+  conversationId,
+  userId,
+}: {
+  conversationId: string
+  userId: number
+}) =>
+  db.query.conversations.findFirst({
+    where: { id: conversationId, users: { id: userId } },
+    columns: conversationColumns,
+    with: {
+      users: {
+        where: { id: { ne: userId } },
+        columns: { username: true },
+        with: {
+          profileInfo: { columns: { displayName: true, avatarUrl: true } },
+        },
+      },
+    },
+  })
+
 export const getOrCreateConversation = ({
   userId,
   recipientId,
@@ -107,7 +136,7 @@ export const getOrCreateConversation = ({
 
     const existing = await tx.query.conversations.findFirst({
       where: { directKey },
-      columns: { id: true, name: true, type: true },
+      columns: conversationColumns,
     })
 
     if (!existing) {

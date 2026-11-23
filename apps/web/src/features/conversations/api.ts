@@ -2,6 +2,7 @@ import z from "zod"
 
 import { apiUrl, parseJson } from "@/utils/api"
 import {
+  conversationResponseSchema,
   conversationsResponseSchema,
   startOrGetConvoResponseSchema,
   type StartOrGetConvoBody,
@@ -27,4 +28,13 @@ export const startOrGetConvo = async (body: StartOrGetConvoBody) => {
     body: JSON.stringify(body),
   })
   return parseJson(res, startOrGetConvoResponseSchema)
+}
+
+export const getConversation = async (conversationId: string) => {
+  const res = await fetch(apiUrl(`/conversations/${conversationId}`), {
+    headers: {
+      Authorization: `Bearer ${getToken()}`,
+    },
+  })
+  return parseJson(res, conversationResponseSchema)
 }

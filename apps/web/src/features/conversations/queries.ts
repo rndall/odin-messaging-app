@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query"
-import { getConversations } from "./api"
+
+import { getConversation, getConversations } from "./api"
 
 export const conversationQueries = {
   all: () => ["conversations"],
@@ -8,5 +9,11 @@ export const conversationQueries = {
     queryOptions({
       queryKey: [...conversationQueries.lists()],
       queryFn: getConversations,
+    }),
+  details: () => [...conversationQueries.all(), "detail"],
+  detail: (conversationId: string) =>
+    queryOptions({
+      queryKey: [...conversationQueries.details(), conversationId],
+      queryFn: () => getConversation(conversationId),
     }),
 }

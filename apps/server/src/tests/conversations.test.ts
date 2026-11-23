@@ -38,17 +38,17 @@ describe("Conversations", () => {
     return user
   }
 
+  const startConversation = (token: string, body: object) =>
+    request(app)
+      .post("/api/conversations")
+      .set("Authorization", `Bearer ${token}`)
+      .send(body)
+
   describe("get conversations route", () => {
     const getConversations = (token: string) =>
       request(app)
         .get("/api/conversations")
         .set("Authorization", `Bearer ${token}`)
-
-    const startConversation = (token: string, toUserId: number) =>
-      request(app)
-        .post("/api/conversations")
-        .set("Authorization", `Bearer ${token}`)
-        .send({ toUserId })
 
     test("returns the user's conversations", async () => {
       const user = await seedUser("user")
@@ -56,7 +56,7 @@ describe("Conversations", () => {
 
       const token = generateToken(user)
 
-      await startConversation(token, otherUser.id)
+      await startConversation(token, { toUserId: otherUser.id })
 
       const res = await getConversations(token)
 
@@ -86,8 +86,12 @@ describe("Conversations", () => {
       const alice = await seedUser("alice")
       const bob = await seedUser("bob")
 
-      const aliceBob = await startConversation(generateToken(alice), bob.id)
-      const userAlice = await startConversation(generateToken(user), alice.id)
+      const aliceBob = await startConversation(generateToken(alice), {
+        toUserId: bob.id,
+      })
+      const userAlice = await startConversation(generateToken(user), {
+        toUserId: alice.id,
+      })
 
       expect(aliceBob.status).toBe(201)
       expect(userAlice.status).toBe(201)
@@ -143,7 +147,7 @@ describe("Conversations", () => {
         avatarUrl: "https://example.com/avatar.png",
       })
 
-      await startConversation(generateToken(user), other.id)
+      await startConversation(generateToken(user), { toUserId: other.id })
 
       const res = await getConversations(generateToken(user))
 
@@ -164,7 +168,9 @@ describe("Conversations", () => {
       const user = await seedUser("user")
       const other = await seedUser("other")
 
-      const created = await startConversation(generateToken(user), other.id)
+      const created = await startConversation(generateToken(user), {
+        toUserId: other.id,
+      })
       const conversationId = (created.body as StartOrGetConvoResponse).id
       const createdAt = new Date("2026-01-01T10:00:00.000Z")
       const editedAt = new Date("2026-01-02T10:00:00.000Z")
@@ -198,7 +204,9 @@ describe("Conversations", () => {
       const user = await seedUser("user")
       const other = await seedUser("other")
 
-      const created = await startConversation(generateToken(user), other.id)
+      const created = await startConversation(generateToken(user), {
+        toUserId: other.id,
+      })
       const conversationId = (created.body as StartOrGetConvoResponse).id
       const newestCreatedAt = new Date("2026-01-02T10:00:00.000Z")
 
@@ -238,17 +246,11 @@ describe("Conversations", () => {
   })
 
   describe("start or get route", () => {
-    const postConversation = (token: string, body: object) =>
-      request(app)
-        .post("/api/conversations")
-        .set("Authorization", `Bearer ${token}`)
-        .send(body)
-
     test("creates a new direct conversation", async () => {
       const sender = await seedUser("sender")
       const recipient = await seedUser("recipient")
 
-      const res = await postConversation(generateToken(sender), {
+      const res = await startConversation(generateToken(sender), {
         toUserId: recipient.id,
       })
 
@@ -279,10 +281,10 @@ describe("Conversations", () => {
       const recipient = await seedUser("recipient")
       const token = generateToken(sender)
 
-      const first = await postConversation(token, {
+      const first = await startConversation(token, {
         toUserId: recipient.id,
       })
-      const second = await postConversation(token, {
+      const second = await startConversation(token, {
         toUserId: recipient.id,
       })
 
@@ -299,8 +301,8 @@ describe("Conversations", () => {
       const token = generateToken(sender)
 
       const [first, second] = await Promise.all([
-        postConversation(token, { toUserId: recipient.id }),
-        postConversation(token, { toUserId: recipient.id }),
+        startConversation(token, { toUserId: recipient.id }),
+        startConversation(token, { toUserId: recipient.id }),
       ])
 
       expect([first.status, second.status].sort((a, b) => a - b)).toStrictEqual(
@@ -315,10 +317,10 @@ describe("Conversations", () => {
       const sender = await seedUser("sender")
       const recipient = await seedUser("recipient")
 
-      const first = await postConversation(generateToken(sender), {
+      const first = await startConversation(generateToken(sender), {
         toUserId: recipient.id,
       })
-      const reverse = await postConversation(generateToken(recipient), {
+      const reverse = await startConversation(generateToken(recipient), {
         toUserId: sender.id,
       })
 
@@ -333,7 +335,7 @@ describe("Conversations", () => {
     test("returns 404 when the recipient does not exist", async () => {
       const sender = await seedUser("sender")
 
-      const res = await postConversation(generateToken(sender), {
+      const res = await startConversation(generateToken(sender), {
         toUserId: 999999,
       })
 
@@ -345,7 +347,7 @@ describe("Conversations", () => {
     test("returns 400 when starting a conversation with yourself", async () => {
       const sender = await seedUser("sender")
 
-      const res = await postConversation(generateToken(sender), {
+      const res = await startConversation(generateToken(sender), {
         toUserId: sender.id,
       })
 
@@ -367,7 +369,7 @@ describe("Conversations", () => {
       ])("returns 422 with $description", async ({ body }) => {
         const sender = await seedUser("sender")
 
-        const res = await postConversation(generateToken(sender), body)
+        const res = await startConversation(generateToken(sender), body)
 
         expect(res.headers["content-type"]).toMatch(/json/)
         expect(res.status).toBe(422)
@@ -376,6 +378,111 @@ describe("Conversations", () => {
 
     describeUnauthorized(() =>
       request(app).post("/api/conversations").send({ toUserId: 1 })
+    )
+  })
+
+  describe("get conversation route", () => {
+    const getConversation = (token: string, conversationId: string) =>
+      request(app)
+        .get(`/api/conversations/${conversationId}`)
+        .set("Authorization", `Bearer ${token}`)
+
+    test("returns a direct conversation by id", async () => {
+      const user = await seedUser("user")
+      const other = await seedUser("other")
+      const created = await startConversation(generateToken(user), {
+        toUserId: other.id,
+      })
+      const conversation = created.body as StartOrGetConvoResponse
+
+      const res = await getConversation(generateToken(user), conversation.id)
+
+      expect(res.headers["content-type"]).toMatch(/json/)
+      expect(res.status).toBe(200)
+      expect(res.body).toStrictEqual({
+        id: conversation.id,
+        type: "direct",
+        display: {
+          title: "other",
+          avatarUrl: null,
+        },
+      })
+    })
+
+    test("returns a group conversation with its name", async () => {
+      const user = await seedUser("user")
+
+      const group = await db.transaction(async (tx) => {
+        const [group] = await tx
+          .insert(conversations)
+          .values({ type: "group", name: "Team" })
+          .returning({ id: conversations.id })
+
+        if (!group) throw new Error("Failed to create group")
+
+        await tx.insert(usersToConversations).values({
+          conversationId: group.id,
+          userId: user.id,
+        })
+
+        return group
+      })
+
+      const res = await getConversation(generateToken(user), group.id)
+
+      expect(res.headers["content-type"]).toMatch(/json/)
+      expect(res.status).toBe(200)
+      expect(res.body).toStrictEqual({
+        id: group.id,
+        type: "group",
+        display: {
+          title: "Team",
+          avatarUrl: null,
+        },
+      })
+    })
+
+    test("returns 404 when the conversation does not exist", async () => {
+      const user = await seedUser("user")
+
+      const res = await getConversation(
+        generateToken(user),
+        crypto.randomUUID()
+      )
+
+      expect(res.headers["content-type"]).toMatch(/json/)
+      expect(res.status).toBe(404)
+      expect(res.body).toStrictEqual({ message: "Conversation not found" })
+    })
+
+    test("returns 404 when the user is not a participant", async () => {
+      const user = await seedUser("user")
+      const participant1 = await seedUser("participant1")
+      const participant2 = await seedUser("participant2")
+
+      const created = await startConversation(generateToken(participant1), {
+        toUserId: participant2.id,
+      })
+      const conversation = created.body as StartOrGetConvoResponse
+
+      const res = await getConversation(generateToken(user), conversation.id)
+
+      expect(res.headers["content-type"]).toMatch(/json/)
+      expect(res.status).toBe(404)
+      expect(res.body).toStrictEqual({ message: "Conversation not found" })
+    })
+
+    test("returns 422 when the id is not a uuid", async () => {
+      const user = await seedUser("user")
+
+      const res = await getConversation(generateToken(user), "not-a-uuid")
+
+      expect(res.headers["content-type"]).toMatch(/json/)
+      expect(res.status).toBe(422)
+    })
+
+    describeUnauthorized(() =>
+      request(app).get(`/api/conversations/${crypto.randomUUID()}`)
     )
   })
 })

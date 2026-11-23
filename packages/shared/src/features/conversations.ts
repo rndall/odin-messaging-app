@@ -30,9 +30,25 @@ export type StartOrGetConvoBody = z.infer<typeof startOrGetConvoBodySchema>
 
 export const startOrGetConvoResponseSchema = z.object({
   id: z.string(),
-  type: z.enum(["direct", "group"]),
+  type: z.enum(conversationTypes),
   name: z.string().nullable(),
 })
 export type StartOrGetConvoResponse = z.infer<
   typeof startOrGetConvoResponseSchema
 >
+
+// GET /:conversationId
+export const conversationParamsSchema = z.object({
+  conversationId: z.uuid(),
+})
+export type ConversationParams = z.infer<typeof conversationParamsSchema>
+
+export const conversationResponseSchema = z.object({
+  id: z.string(),
+  type: z.enum(conversationTypes),
+  display: z.object({
+    title: z.string(),
+    avatarUrl: z.string().nullable(),
+  }),
+})
+export type ConversationResponse = z.infer<typeof conversationResponseSchema>
