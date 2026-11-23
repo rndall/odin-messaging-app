@@ -1,6 +1,12 @@
 import request from "supertest"
 
-import { db, users } from "@workspace/db"
+import {
+  conversations,
+  db,
+  profileInfo,
+  users,
+  usersToConversations,
+} from "@workspace/db"
 import { app } from "../app.ts"
 import { generateToken } from "../utils/auth.ts"
 import { describeUnauthorized } from "./utils/auth.ts"
@@ -9,6 +15,9 @@ describe("Users", () => {
   let token: string
 
   beforeEach(async () => {
+    await db.delete(usersToConversations)
+    await db.delete(conversations)
+    await db.delete(profileInfo)
     await db.delete(users)
 
     const [currentUser] = await db
