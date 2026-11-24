@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
 
 import { AppSidebar } from "@/components/app-sidebar"
+import { authQueries } from "@/features/auth/queries"
 import { isAuthenticated } from "@/features/auth/utils"
 import { conversationQueries } from "@/features/conversations/queries"
 import { SidebarProvider } from "@workspace/ui/components/sidebar"
@@ -17,11 +18,16 @@ export const Route = createFileRoute("/_authed")({
     }
   },
   context: () => ({
+    meQueryOptions: authQueries.me(),
     conversationsQueryOptions: conversationQueries.list(),
   }),
   loader: ({ context }) => {
     context.queryClient.query({
       ...context.conversationsQueryOptions,
+      staleTime: "static",
+    })
+    context.queryClient.query({
+      ...context.meQueryOptions,
       staleTime: "static",
     })
   },
@@ -30,9 +36,9 @@ export const Route = createFileRoute("/_authed")({
 
 function RouteComponent() {
   return (
-    <SidebarProvider open={true}>
+    <SidebarProvider className="h-svh" open={true}>
       <AppSidebar />
-      <main className="m-4 flex flex-1 flex-col bg-card shadow">
+      <main className="m-4 flex min-h-0 flex-1 flex-col bg-card shadow">
         <Outlet />
       </main>
     </SidebarProvider>

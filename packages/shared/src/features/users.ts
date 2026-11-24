@@ -1,14 +1,13 @@
 import z from "zod"
 
-import { emptyToUndef } from "../utils.ts"
+import { emptyToUndef, limitSchema } from "../utils.ts"
 
 // GET /
 export const usersQuerySchema = z.object({
   search: z.string().trim().optional(),
-  limit: emptyToUndef(
-    z.coerce.number().int().min(1).max(100).default(10).optional()
-  ),
+  limit: emptyToUndef(limitSchema.optional().default(10)),
 })
+export type UsersQueryInput = z.input<typeof usersQuerySchema>
 export type UsersQuery = z.infer<typeof usersQuerySchema>
 
 export const usersReturnSchema = z.object({

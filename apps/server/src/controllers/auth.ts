@@ -1,10 +1,11 @@
 import {
   loginSchema,
   registerSchema,
+  type AuthUserReturn,
   type LoginReturn,
   type RegisterReturn,
 } from "@workspace/shared"
-import type { Response } from "express"
+import type { Request, Response } from "express"
 import createHttpError from "http-errors"
 
 import { createUser, generateToken, loginUser } from "../utils/auth.ts"
@@ -41,3 +42,7 @@ export const login = makeValidatedEndpoint(
     res.json({ message: "Login successful", user, token })
   }
 )
+
+export const getMe = (req: Request, res: Response<AuthUserReturn>) => {
+  res.json(req.user)
+}

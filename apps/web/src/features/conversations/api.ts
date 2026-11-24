@@ -4,7 +4,10 @@ import { apiUrl, parseJson } from "@/utils/api"
 import {
   conversationResponseSchema,
   conversationsResponseSchema,
+  messagesResponseSchema,
   startOrGetConvoResponseSchema,
+  type ConversationParams,
+  type CursorQueryInput,
   type StartOrGetConvoBody,
 } from "@workspace/shared"
 import { getToken } from "../auth/utils"
@@ -37,4 +40,19 @@ export const getConversation = async (conversationId: string) => {
     },
   })
   return parseJson(res, conversationResponseSchema)
+}
+
+export const getConversationMessages = async ({
+  conversationId,
+  ...query
+}: ConversationParams & CursorQueryInput) => {
+  const res = await fetch(
+    apiUrl(`/conversations/${conversationId}/messages`, query),
+    {
+      headers: {
+        Authorization: `Bearer ${getToken()}`,
+      },
+    }
+  )
+  return parseJson(res, messagesResponseSchema)
 }

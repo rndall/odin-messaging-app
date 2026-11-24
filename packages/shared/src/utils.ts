@@ -3,7 +3,7 @@ import z, { ZodType } from "zod"
 import type { UsersReturn } from "./features/users.ts"
 
 export const emptyToUndef = <T extends ZodType>(schema: T) =>
-  z.preprocess((v) => v || undefined, schema)
+  z.preprocess((v: z.input<T>) => v || undefined, schema)
 
 export const getDirectKey = (a: number, b: number) =>
   `${Math.min(a, b)}:${Math.max(a, b)}`
@@ -22,3 +22,5 @@ export const getFirstTwoInitials = (name: string) => {
 
   return (first.charAt(0) + second.charAt(0)).toUpperCase()
 }
+
+export const limitSchema = z.coerce.number<number>().int().min(1).max(100)

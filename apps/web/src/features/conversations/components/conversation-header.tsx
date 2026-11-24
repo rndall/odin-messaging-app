@@ -18,7 +18,7 @@ export default function ConversationHeader() {
   )
 
   return (
-    <div className="px-4">
+    <div className="p-4 shadow-md">
       <div className="flex items-center gap-3">
         <Avatar>
           <AvatarImage src={conversation.display.avatarUrl ?? undefined} />

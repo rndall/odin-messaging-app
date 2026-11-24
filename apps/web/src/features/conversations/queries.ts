@@ -1,6 +1,10 @@
-import { queryOptions } from "@tanstack/react-query"
+import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query"
 
-import { getConversation, getConversations } from "./api"
+import {
+  getConversation,
+  getConversationMessages,
+  getConversations,
+} from "./api"
 
 export const conversationQueries = {
   all: () => ["conversations"],
@@ -15,5 +19,19 @@ export const conversationQueries = {
     queryOptions({
       queryKey: [...conversationQueries.details(), conversationId],
       queryFn: () => getConversation(conversationId),
+    }),
+  messages: (conversationId: string) =>
+    infiniteQueryOptions({
+      queryKey: [
+        ...conversationQueries.detail(conversationId).queryKey,
+        "messages",
+      ],
+      queryFn: ({ pageParam }) =>
+        getConversationMessages({
+          conversationId,
+          cursor: pageParam,
+        }),
+      initialPageParam: "",
+      getNextPageParam: (lastPage) => lastPage.pagination.nextCursor,
     }),
 }

@@ -1,4 +1,3 @@
-import { conversationTypes } from "@workspace/shared"
 import { defineRelations, sql } from "drizzle-orm"
 import {
   check,
@@ -12,6 +11,8 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core"
+
+import { conversationTypes } from "@workspace/shared"
 
 export const users = snakeCase.table("users", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
@@ -43,7 +44,11 @@ export const messages = snakeCase.table(
     editedAt: timestamp({ withTimezone: true }),
   },
   (t) => [
-    index("messages_conversation_id_idx").on(t.conversationId, t.createdAt),
+    index("messages_conversation_id_idx").on(
+      t.conversationId,
+      t.createdAt,
+      t.id
+    ),
   ]
 )
 

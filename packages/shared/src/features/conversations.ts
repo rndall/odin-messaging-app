@@ -1,4 +1,5 @@
 import z from "zod"
+import { cursorResponseSchema } from "./pagination.ts"
 
 export const conversationTypes = ["direct", "group"] as const
 export type ConversationType = (typeof conversationTypes)[number]
@@ -9,7 +10,7 @@ export const conversationsResponseSchema = z.object({
   type: z.enum(conversationTypes),
   display: z.object({
     title: z.string(),
-    avatarUrl: z.string().nullable(),
+    avatarUrl: z.url().nullable(),
   }),
   lastMessage: z
     .object({
@@ -48,7 +49,38 @@ export const conversationResponseSchema = z.object({
   type: z.enum(conversationTypes),
   display: z.object({
     title: z.string(),
-    avatarUrl: z.string().nullable(),
+    avatarUrl: z.url().nullable(),
   }),
 })
 export type ConversationResponse = z.infer<typeof conversationResponseSchema>
+
+// GET /:conversationId/messages
+export const messageCursorSchema = z.object({
+  id: z.uuid(),
+  createdAt: z.coerce.date(),
+})
+export type MessageCursor = z.infer<typeof messageCursorSchema>
+
+export const messagesSchema = z.object({
+  id: z.uuid(),
+  content: z.string(),
+  createdAt: z.string(),
+  editedAt: z.string().nullable(),
+  sender: z.object({
+    id: z.number().int().positive(),
+    username: z.string(),
+    profileInfo: z
+      .object({
+        displayName: z.string().nullable(),
+        avatarUrl: z.url().nullable(),
+      })
+      .nullable(),
+  }),
+})
+export type Messages = z.infer<typeof messagesSchema>
+
+export const messagesResponseSchema = z.object({
+  data: z.array(messagesSchema),
+  pagination: cursorResponseSchema,
+})
+export type MessagesResponse = z.infer<typeof messagesResponseSchema>
