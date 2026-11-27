@@ -8,87 +8,87 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as AuthRouteRouteImport } from './routes/_auth/route'
-import { Route as AuthedRouteRouteImport } from './routes/_authed/route'
-import { Route as AuthLoginRouteImport } from './routes/_auth/login'
-import { Route as AuthSignUpRouteImport } from './routes/_auth/sign-up'
-import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
-import { Route as AuthedConversationIdRouteImport } from './routes/_authed/$conversationId'
-import { Route as AuthedNewRouteImport } from './routes/_authed/new'
+import { Route as rootRouteImport } from "./routes/__root"
+import { Route as AuthRouteRouteImport } from "./routes/_auth/route"
+import { Route as AuthedRouteRouteImport } from "./routes/_authed/route"
+import { Route as AuthLoginRouteImport } from "./routes/_auth/login"
+import { Route as AuthSignUpRouteImport } from "./routes/_auth/sign-up"
+import { Route as AuthedIndexRouteImport } from "./routes/_authed/index"
+import { Route as AuthedConversationIdRouteImport } from "./routes/_authed/$conversationId"
+import { Route as AuthedNewRouteImport } from "./routes/_authed/new"
 
 const AuthRouteRoute = AuthRouteRouteImport.update({
-  id: '/_auth',
+  id: "/_auth",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedRouteRoute = AuthedRouteRouteImport.update({
-  id: '/_authed',
+  id: "/_authed",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+  id: "/login",
+  path: "/login",
   getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthSignUpRoute = AuthSignUpRouteImport.update({
-  id: '/sign-up',
-  path: '/sign-up',
+  id: "/sign-up",
+  path: "/sign-up",
   getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => AuthedRouteRoute,
 } as any)
 const AuthedConversationIdRoute = AuthedConversationIdRouteImport.update({
-  id: '/$conversationId',
-  path: '/$conversationId',
+  id: "/$conversationId",
+  path: "/$conversationId",
   getParentRoute: () => AuthedRouteRoute,
 } as any)
 const AuthedNewRoute = AuthedNewRouteImport.update({
-  id: '/new',
-  path: '/new',
+  id: "/new",
+  path: "/new",
   getParentRoute: () => AuthedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthedIndexRoute
-  '/login': typeof AuthLoginRoute
-  '/sign-up': typeof AuthSignUpRoute
-  '/$conversationId': typeof AuthedConversationIdRoute
-  '/new': typeof AuthedNewRoute
+  "/": typeof AuthedIndexRoute
+  "/login": typeof AuthLoginRoute
+  "/sign-up": typeof AuthSignUpRoute
+  "/$conversationId": typeof AuthedConversationIdRoute
+  "/new": typeof AuthedNewRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof AuthedIndexRoute
-  '/login': typeof AuthLoginRoute
-  '/sign-up': typeof AuthSignUpRoute
-  '/$conversationId': typeof AuthedConversationIdRoute
-  '/new': typeof AuthedNewRoute
+  "/": typeof AuthedIndexRoute
+  "/login": typeof AuthLoginRoute
+  "/sign-up": typeof AuthSignUpRoute
+  "/$conversationId": typeof AuthedConversationIdRoute
+  "/new": typeof AuthedNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_auth': typeof AuthRouteRouteWithChildren
-  '/_authed': typeof AuthedRouteRouteWithChildren
-  '/_auth/login': typeof AuthLoginRoute
-  '/_auth/sign-up': typeof AuthSignUpRoute
-  '/_authed/$conversationId': typeof AuthedConversationIdRoute
-  '/_authed/new': typeof AuthedNewRoute
-  '/_authed/': typeof AuthedIndexRoute
+  "/_auth": typeof AuthRouteRouteWithChildren
+  "/_authed": typeof AuthedRouteRouteWithChildren
+  "/_auth/login": typeof AuthLoginRoute
+  "/_auth/sign-up": typeof AuthSignUpRoute
+  "/_authed/$conversationId": typeof AuthedConversationIdRoute
+  "/_authed/new": typeof AuthedNewRoute
+  "/_authed/": typeof AuthedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/sign-up' | '/$conversationId' | '/new'
+  fullPaths: "/" | "/login" | "/sign-up" | "/$conversationId" | "/new"
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/sign-up' | '/$conversationId' | '/new'
+  to: "/" | "/login" | "/sign-up" | "/$conversationId" | "/new"
   id:
-    | '__root__'
-    | '/_auth'
-    | '/_authed'
-    | '/_auth/login'
-    | '/_auth/sign-up'
-    | '/_authed/$conversationId'
-    | '/_authed/new'
-    | '/_authed/'
+    | "__root__"
+    | "/_auth"
+    | "/_authed"
+    | "/_auth/login"
+    | "/_auth/sign-up"
+    | "/_authed/$conversationId"
+    | "/_authed/new"
+    | "/_authed/"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -96,54 +96,54 @@ export interface RootRouteChildren {
   AuthedRouteRoute: typeof AuthedRouteRouteWithChildren
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/_auth': {
-      id: '/_auth'
-      path: ''
-      fullPath: '/'
+    "/_auth": {
+      id: "/_auth"
+      path: ""
+      fullPath: "/"
       preLoaderRoute: typeof AuthRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed': {
-      id: '/_authed'
-      path: ''
-      fullPath: '/'
+    "/_authed": {
+      id: "/_authed"
+      path: ""
+      fullPath: "/"
       preLoaderRoute: typeof AuthedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_auth/login': {
-      id: '/_auth/login'
-      path: '/login'
-      fullPath: '/login'
+    "/_auth/login": {
+      id: "/_auth/login"
+      path: "/login"
+      fullPath: "/login"
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRouteRoute
     }
-    '/_auth/sign-up': {
-      id: '/_auth/sign-up'
-      path: '/sign-up'
-      fullPath: '/sign-up'
+    "/_auth/sign-up": {
+      id: "/_auth/sign-up"
+      path: "/sign-up"
+      fullPath: "/sign-up"
       preLoaderRoute: typeof AuthSignUpRouteImport
       parentRoute: typeof AuthRouteRoute
     }
-    '/_authed/': {
-      id: '/_authed/'
-      path: '/'
-      fullPath: '/'
+    "/_authed/": {
+      id: "/_authed/"
+      path: "/"
+      fullPath: "/"
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRouteRoute
     }
-    '/_authed/$conversationId': {
-      id: '/_authed/$conversationId'
-      path: '/$conversationId'
-      fullPath: '/$conversationId'
+    "/_authed/$conversationId": {
+      id: "/_authed/$conversationId"
+      path: "/$conversationId"
+      fullPath: "/$conversationId"
       preLoaderRoute: typeof AuthedConversationIdRouteImport
       parentRoute: typeof AuthedRouteRoute
     }
-    '/_authed/new': {
-      id: '/_authed/new'
-      path: '/new'
-      fullPath: '/new'
+    "/_authed/new": {
+      id: "/_authed/new"
+      path: "/new"
+      fullPath: "/new"
       preLoaderRoute: typeof AuthedNewRouteImport
       parentRoute: typeof AuthedRouteRoute
     }
@@ -161,7 +161,7 @@ const AuthRouteRouteChildren: AuthRouteRouteChildren = {
 }
 
 const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
-  AuthRouteRouteChildren,
+  AuthRouteRouteChildren
 )
 
 interface AuthedRouteRouteChildren {
@@ -177,7 +177,7 @@ const AuthedRouteRouteChildren: AuthedRouteRouteChildren = {
 }
 
 const AuthedRouteRouteWithChildren = AuthedRouteRoute._addFileChildren(
-  AuthedRouteRouteChildren,
+  AuthedRouteRouteChildren
 )
 
 const rootRouteChildren: RootRouteChildren = {

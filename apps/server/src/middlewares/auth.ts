@@ -1,10 +1,7 @@
 import type { NextFunction, Request, Response } from "express"
 import createHttpError from "http-errors"
-import jwt from "jsonwebtoken"
-import z from "zod"
 
-import { authUserReturnSchema } from "@workspace/shared"
-import { env } from "../env.ts"
+import { verifyToken } from "../utils/auth.ts"
 
 export const authenticate = (
   req: Request,
@@ -16,22 +13,11 @@ export const authenticate = (
 
   if (!token) throw createHttpError(401)
 
-  jwt.verify(token, env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      throw createHttpError(401, err.message)
-    }
+  const user = verifyToken(token)
 
-    const result = authUserReturnSchema.safeParse(decoded)
+  if (!user) throw createHttpError(401, "Invalid token")
 
-    if (!result.success) {
-      return res.status(401).json({
-        message: "Invalid token payload",
-        errors: z.flattenError(result.error),
-      })
-    }
+  req.user = user
 
-    req.user = result.data
-
-    next()
-  })
+  next()
 }

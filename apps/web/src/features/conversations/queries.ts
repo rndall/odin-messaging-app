@@ -33,5 +33,6 @@ export const conversationQueries = {
         }),
       initialPageParam: "",
       getNextPageParam: (lastPage) => lastPage.pagination.nextCursor,
+      staleTime: Infinity,
     }),
 }

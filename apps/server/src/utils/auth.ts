@@ -1,5 +1,10 @@
 import { db, users } from "@workspace/db"
-import type { Login, Register } from "@workspace/shared"
+import {
+  authUserReturnSchema,
+  type AuthUserReturn,
+  type Login,
+  type Register,
+} from "@workspace/shared"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 
@@ -7,6 +12,17 @@ import { env } from "../env.ts"
 import type { User } from "../types/users.ts"
 
 export const generateToken = (user: User) => jwt.sign(user, env.JWT_SECRET)
+
+export const verifyToken = (token: string): AuthUserReturn | null => {
+  try {
+    const decoded = jwt.verify(token, env.JWT_SECRET)
+    const result = authUserReturnSchema.safeParse(decoded)
+
+    return result.success ? result.data : null
+  } catch {
+    return null
+  }
+}
 
 export const createUser = async ({
   username,

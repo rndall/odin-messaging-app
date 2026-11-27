@@ -84,3 +84,16 @@ export const messagesResponseSchema = z.object({
   pagination: cursorResponseSchema,
 })
 export type MessagesResponse = z.infer<typeof messagesResponseSchema>
+
+export const sendMessageBodySchema = z.object({
+  conversationId: z.uuid(),
+  content: z.string().trim().min(1).max(250),
+})
+export type SendMessageBody = z.infer<typeof sendMessageBodySchema>
+
+export const newMessageSchema = z.object({
+  conversationId: z.uuid(),
+  content: z.string(),
+  senderId: z.number().int().positive(),
+})
+export type NewMessage = z.infer<typeof newMessageSchema>

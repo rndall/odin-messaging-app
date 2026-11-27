@@ -7,9 +7,12 @@ import express, {
 } from "express"
 import helmet from "helmet"
 import createError from "http-errors"
+import { createServer } from "node:http"
+
 import { apiRouter } from "./routes/api.ts"
 
 const app: Express = express()
+const server = createServer(app)
 
 app.use(helmet())
 app.use((req, res, next) => {
@@ -42,4 +45,4 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   return res.status(status).json({ message })
 })
 
-export { app }
+export { app, server }
